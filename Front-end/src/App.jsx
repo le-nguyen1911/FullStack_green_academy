@@ -1,60 +1,33 @@
+import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import axios from 'axios';
+import LayoutMain from './layouts/layoutmain/LayoutMain';
+import Homepage from './pages/homepage/Homepage';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "primereact/resources/themes/lara-light-blue/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
+import Introduce from './pages/Utilities/Introduce';
+import ProductsList from './pages/products/ProductsList';
+import { UserProvider } from './hooks/UserContext';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
 
-import Layout from './layouts/Layout';
-
-import ProtectedRoute from './components/ProtectedRoute';
-import AdminRoute from './components/AdminRoute';
-
-import ProductList from './pages/products/ProductList';
-import ProductCreate from './pages/products/ProductCreate';
-import ProductDetails from './pages/products/ProductDetails';
-import ProductEdit from './pages/products/ProductEdit';
-
-import Login from './pages/auth/Login';
-import Home from './pages/Home';
-import ProductSearch from './pages/products/ProductSearch';
+axios.defaults.baseURL = 'http://localhost:3000/';
 
 const App = () => {
-	return (
-		<BrowserRouter>
-			<Routes>
-				<Route path='/' element={<Layout />}>
-					<Route index element={<Home />} />
-
-					<Route path='login' element={<Login />} />
-
-					<Route path='products'>
-						<Route index element={<ProductList />} />
-						<Route
-							path='create'
-							element={
-								<AdminRoute>
-									<ProductCreate />
-								</AdminRoute>
-							}
-						/>
-						<Route path='search' element={<ProductSearch />} />
-						<Route
-							path=':id'
-							element={
-								<ProtectedRoute>
-									<ProductDetails />
-								</ProtectedRoute>
-							}
-						/>
-						<Route path=':id/edit' element={<ProductEdit />} />
-					</Route>
-
-					<Route
-						path='403'
-						element={<h1>You do not have access to this page</h1>}
-					/>
-				</Route>
-			</Routes>
-		</BrowserRouter>
-	);
+  return (
+    <UserProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<LayoutMain />}>
+            <Route path="/" element={<Homepage />} />
+            <Route path="/gioi-thieu" element={<Introduce />} />
+            <Route path="/san-pham" element={<ProductsList />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </UserProvider>
+  );
 };
 
 export default App;

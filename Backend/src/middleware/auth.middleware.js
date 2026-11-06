@@ -1,6 +1,9 @@
 const jwt = require("jsonwebtoken");
-const db = require("..//config/database");
+const { getUserPermissions } = require("../services/permission.service");
 const { ALL_CODES } = require("../constants/permission");
+
+
+
 exports.authenticate = (req, res, next) => {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;

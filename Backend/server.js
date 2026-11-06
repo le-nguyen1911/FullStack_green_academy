@@ -17,6 +17,7 @@ app.post('/api/auth/refresh', auth.refresh);
 app.post('/api/auth/logout', auth.logout);
 app.get('/api/auth/me', authenticate, auth.me);
 
+app.use("/api/admin", require("./src/routes/admin.routes"));
 app.get("/health/db", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT NOW() AS currentTime");

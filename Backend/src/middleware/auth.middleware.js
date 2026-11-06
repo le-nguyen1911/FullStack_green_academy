@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const db = require("..//config/database");
-
+const { ALL_CODES } = require("../constants/permission");
 exports.authenticate = (req, res, next) => {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
@@ -19,15 +19,22 @@ exports.authenticate = (req, res, next) => {
   }
 };
 
-exports.authorize = (permissionCode) => async (req, res, next) => {
-  const [rows] = await db.query(
-    `SELECT 1
-     FROM role_permissions rp
-     JOIN roles r ON r.id = rp.role_id
-     JOIN permissions p ON p.id = rp.permission_id
-     WHERE r.name = ? AND p.code = ? LIMIT 1`,
-    [req.user.role, permissionCode],
-  );
-  if (!rows.length) return res.status(403).json({ message: "Không đủ quyền" });
-  next();
+exports.authorize = (...codes) => {
+  for (const c of codes) {
+    if (!ALL_CODES.includes(c))
+      throw new Error(
+        `authorize(): permission "${c}" chưa khai báo trong constants/permissions.js`,
+      );
+  }
+
+  return async (req, res, next) => {
+    try {
+      const owned = await getUserPermissions(req.user.id);
+      if (!codes.some((c) => owned.has(c)))
+        return res.status(403).json({ message: "Không đủ quyền" });
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
 };

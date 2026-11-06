@@ -11,4 +11,19 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+async function testConnection() {
+  try {
+    const [rows] = await pool.query("SELECT 1 + 1 AS result");
+    console.log(
+      "Đã kết nối thành công đến MySQL! ",
+    );
+  } catch (error) {
+    console.error("❌ Kết nối MySQL thất bại. Vui lòng kiểm tra lại cấu hình!");
+    console.error("Chi tiết lỗi:", error.message);
+    process.exit(1);
+  }
+}
+
+testConnection();
+
 module.exports = pool;

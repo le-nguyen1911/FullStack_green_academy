@@ -34,9 +34,18 @@ const countByRoleName = async (roleName) => {
   return row.total;
 };
 
+
+const findByEmail = async (email) => {
+  const [rows] = await conn.query(
+    "SELECT id, full_name, email FROM users WHERE email = ?",
+    [email],
+  );
+  return rows[0] || null;
+}
 module.exports = {
   findByIdWithRole,
   updateRole,
   countByRoleId,
   countByRoleName,
+  findByEmail
 };

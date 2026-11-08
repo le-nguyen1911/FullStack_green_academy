@@ -2,18 +2,15 @@ const db = require("../config/database");
 
 const findCodesByUser = async (userId) => {
   const [rows] = await db.query(
-    `
-        SELECT DISTINCT p.code
-        FROM users u
-        JOIN role_permissions rp ON r.id = rp.role_id
-        JOIN permissions p ON p.id = rp.permission_id
-        WHERE u.id = ?`,
+    `SELECT DISTINCT p.code
+     FROM users u
+     JOIN role_permissions rp ON rp.role_id = u.role_id
+     JOIN permissions p ON p.id = rp.permission_id
+     WHERE u.id = ?`,
     [userId],
   );
-
-  return rows.map((row) => row.code);
+  return rows.map((r) => r.code);
 };
-
 const listAll = async () => {
   const [rows] = await db.query(
     "SELECT id, code, name, module FROM permissions ORDER BY module, code",

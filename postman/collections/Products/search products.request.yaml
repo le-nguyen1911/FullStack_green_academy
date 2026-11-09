@@ -1,0 +1,9 @@
+$kind: http-request
+url: "http://localhost:3000/products?q=buôn ma thuật "
+method: GET
+queryParams:
+  - key: q
+    value: "buôn ma thuật "
+    disabled: false
+    description: ""
+order: 2000

@@ -1,0 +1,39 @@
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.breadcrumb a {
+    color: #222;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #6F4E37;
+}
+
+.active {
+    color: #6F4E37;
+    font-weight: 600;
+}
+
+.logout {
+    padding: 10px 15px;
+    border-radius: 25px;
+    background: #583e2c;
+    color: white;
+}
+
+.breadcrumb span {
+    font-size: 18px;
+    margin: 0 3px;
+}
+
+.logout:hover {
+    background-color: #775741;
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}

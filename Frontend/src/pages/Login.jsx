@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { login } from "../redux/slices/authSlice";
+import React, { useEffect, useState } from "react";
+import { login, clearLoginError } from "../redux/slices/authSlice";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -33,18 +33,17 @@ const Login = () => {
   };
 
   const onSubmit = async (e) => {
-    console.log(form);
-
     e.preventDefault();
     try {
-      const response = await dispatch(login(form)).unwrap();
-
+      await dispatch(login(form)).unwrap();
       navigate("/", { replace: true });
     } catch (error) {
-      console.error("Login failed:", error);
+      console.log("Đăng nhập thất bại:", error);
     }
   };
-
+  useEffect(() => {
+    dispatch(clearLoginError());
+  }, [dispatch]);
   return (
     <div className='bg-[url("./assets/bg-login.jpg")] bg-cover bg-center min-h-screen w-full flex items-center justify-center p-4'>
       <div className="bg-white/20 backdrop-blur-md p-8 rounded-2xl border border-white/30 flex flex-col gap-5 w-full max-w-[400px] shadow-xl">
@@ -127,5 +126,4 @@ const Login = () => {
     </div>
   );
 };
-
 export default Login;

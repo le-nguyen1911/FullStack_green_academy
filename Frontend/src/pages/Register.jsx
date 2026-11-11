@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { register } from "../redux/slices/authSlice";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { register, resetRegister } from "../redux/slices/authSlice";
 
 import { InputText } from "@primereact/ui/inputtext";
 import { Label } from "@primereact/ui/label";
-import { Check, Eye, EyeSlash, Lock, Times } from "@primeicons/react";
+import { Check, Eye, EyeSlash, Times } from "@primeicons/react";
 import { Chip } from "@primereact/ui/chip";
 import { IconField } from "@primereact/ui/iconfield";
 import { InputPassword } from "@primereact/ui/inputpassword";
@@ -17,15 +17,15 @@ const rules = [
   { label: "Ký tự đặc biệt", test: (v) => /[^a-zA-Z0-9]/.test(v) },
 ];
 
+const PHONE_RE = /^[0-9+\-\s]{8,20}$/;
+
 const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
-
   const { registerStatus, registerError } = useSelector((state) => state.auth);
 
   const [visible, setVisible] = useState(false);
-
+  const [localError, setLocalError] = useState("");
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -34,31 +34,32 @@ const Register = () => {
     address: "",
   });
 
-  const notice = location.state?.message;
+  // Xóa trạng thái đăng ký của lần trước khi mở trang
+  useEffect(() => {
+    dispatch(resetRegister());
+  }, [dispatch]);
 
   const passwordValid = rules.every((rule) => rule.test(form.password));
 
   const onChange = (e) => {
     const { name, value } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    console.log(form);
+    setLocalError("");
 
-    if (!passwordValid) {
-      return;
-    }
+    if (!passwordValid) return;
+    if (form.phone.trim() && !PHONE_RE.test(form.phone.trim()))
+      return setLocalError("Số điện thoại không hợp lệ");
 
     try {
       await dispatch(
         register({
           ...form,
+          full_name: form.full_name.trim(),
+          email: form.email.trim(),
           phone: form.phone.trim() || null,
           address: form.address.trim() || null,
         }),
@@ -66,29 +67,25 @@ const Register = () => {
 
       navigate("/login", {
         replace: true,
-        state: {
-          message: "Đăng ký thành công. Vui lòng đăng nhập!",
-        },
+        state: { message: "Đăng ký thành công. Vui lòng đăng nhập!" },
       });
-    } catch (error) {
-      console.error("Đăng ký thất bại:", error);
+    } catch {
+      // registerError đã nằm trong Redux, hiển thị ở phía dưới
     }
   };
+
+  const errorText = localError || registerError;
 
   return (
     <div className='bg-[url("./assets/bg-login.jpg")] bg-cover bg-center min-h-screen w-full flex items-center justify-center p-4'>
       <div className="bg-white/20 backdrop-blur-md p-8 rounded-2xl border border-white/30 flex flex-col gap-5 w-full max-w-[400px] shadow-xl">
         <h2 className="text-white font-bold text-3xl text-center">Register</h2>
 
-        {notice && <p className="text-green-200 text-center">{notice}</p>}
-
         <form onSubmit={onSubmit} className="w-full space-y-4">
-          {/* Full name */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="full_name" className="text-white">
               Tên người dùng
             </Label>
-
             <InputText
               id="full_name"
               name="full_name"
@@ -100,12 +97,10 @@ const Register = () => {
             />
           </div>
 
-          {/* Email */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="email" className="text-white">
               Email
             </Label>
-
             <InputText
               id="email"
               type="email"
@@ -123,13 +118,12 @@ const Register = () => {
             <Label htmlFor="phone" className="text-white">
               Số điện thoại
             </Label>
-
             <InputText
               id="phone"
               name="phone"
               value={form.phone}
               onChange={onChange}
-              placeholder="Nhập số điện thoại"
+              placeholder="Nhập số điện thoại (không bắt buộc)"
               className="p-3 w-full"
             />
           </div>
@@ -138,18 +132,16 @@ const Register = () => {
             <Label htmlFor="address" className="text-white">
               Địa chỉ
             </Label>
-
             <InputText
               id="address"
               name="address"
               value={form.address}
               onChange={onChange}
-              placeholder="Nhập địa chỉ"
+              placeholder="Nhập địa chỉ (không bắt buộc)"
               className="p-3 w-full"
             />
           </div>
 
-          {/* Password */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="password" className="text-white">
               Mật khẩu
@@ -161,17 +153,14 @@ const Register = () => {
                 name="password"
                 fluid
                 mask={!visible}
+                autoComplete="new-password"
                 value={form.password}
                 onInput={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    password: e.target.value,
-                  }))
+                  setForm((prev) => ({ ...prev, password: e.target.value }))
                 }
                 className="p-3"
                 required
               />
-
               <IconField.Inset
                 className="cursor-pointer"
                 onClick={() => setVisible((v) => !v)}
@@ -184,11 +173,9 @@ const Register = () => {
               </IconField.Inset>
             </IconField.Root>
 
-            {/* Password rules */}
             <div className="mt-4 flex items-center flex-wrap gap-1.5">
               {rules.map((rule) => {
                 const passed = rule.test(form.password);
-
                 return (
                   <Chip.Root
                     key={rule.label}
@@ -214,7 +201,6 @@ const Register = () => {
                         )}
                       </span>
                     </Chip.Start>
-
                     <Chip.Label>{rule.label}</Chip.Label>
                   </Chip.Root>
                 );
@@ -222,8 +208,8 @@ const Register = () => {
             </div>
           </div>
 
-          {registerError && (
-            <p className="text-red-200 text-sm text-center">{registerError}</p>
+          {errorText && (
+            <p className="text-red-200 text-sm text-center">{errorText}</p>
           )}
 
           <button
@@ -234,6 +220,16 @@ const Register = () => {
             {registerStatus === "loading" ? "Đang đăng ký..." : "Đăng ký"}
           </button>
         </form>
+
+        <p className="text-center text-white text-sm">
+          Đã có tài khoản?{" "}
+          <Link
+            to="/login"
+            className="no-underline! text-white! hover:text-[#D4A373]! font-semibold"
+          >
+            Đăng nhập
+          </Link>
+        </p>
       </div>
     </div>
   );

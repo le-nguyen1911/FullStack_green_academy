@@ -13,7 +13,7 @@ const findByEmailWithRole = async (email) => {
 
 const findByIdWithRole = async (id) => {
   const [rows] = await db.query(
-    `SELECT u.id, u.full_name, u.email, u.role_id, r.name AS role_name
+    `SELECT u.id, u.full_name, u.email, u.phone, u.address, u.role_id, r.name AS role_name
      FROM users u JOIN roles r ON r.id = u.role_id
      WHERE u.id = ?`,
     [id],
@@ -21,6 +21,12 @@ const findByIdWithRole = async (id) => {
   return rows[0] || null;
 };
 
+const updateProfile = async (id, { full_name, phone, address }) => {
+  await db.query(
+    "UPDATE users SET full_name = ?, phone = ?, address = ? WHERE id = ?",
+    [full_name, phone || null, address || null, id],
+  );
+};
 const emailExists = async (email) => {
   const [rows] = await db.query("SELECT 1 FROM users WHERE email = ? LIMIT 1", [
     email,
@@ -100,4 +106,5 @@ module.exports = {
   findByEmail,
   findPasswordHash,
   updatePassword,
+  updateProfile,
 };

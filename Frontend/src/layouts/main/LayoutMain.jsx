@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useAuth } from "../../hooks/useAuth";
 import { logout } from "../../redux/slices/authSlice";
@@ -7,7 +7,7 @@ import { isManagerRole } from "../../util/roles";
 export default function LayoutMain() {
   const { user } = useAuth();
   const dispatch = useDispatch();
-
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b bg-white">
@@ -34,12 +34,15 @@ export default function LayoutMain() {
                     Quản lý
                   </Link>
                 )}
-                <Link to="/profile" className="text-stone-600 hover:underline">
+                <Link
+                  to="/account/profile  "
+                  className="text-stone-600 hover:underline"
+                >
                   Đổi mật khẩu
                 </Link>
                 <span>{user.full_name}</span>
                 <button
-                  onClick={() => dispatch(logout())}
+                  onClick={() => dispatch(logout(), navigate("/login"))}
                   className="text-stone-500 hover:underline"
                 >
                   Đăng xuất

@@ -52,9 +52,12 @@ exports.logout = async (req, res) => {
 exports.me = async (req, res) =>
   res.json({ user: await service.getMe(req.user.id) });
 
+exports.updateProfile = async (req, res) =>
+  res.json({ user: await service.updateProfile(req.user.id, req.body) });
+
 exports.changePassword = async (req, res) => {
   await service.changePassword(req.user.id, req.body);
-  clearRefreshCookie(res); 
+  clearRefreshCookie(res);
   res.json({ message: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại" });
 };
 
@@ -66,4 +69,11 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   await service.resetPassword(req.body);
   res.json({ message: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại" });
+};
+exports.verifyResetOTP = async (req, res) => {
+  await service.verify_otp(req.body);
+
+  res.json({
+    message: "Xác thực OTP thành công",
+  });
 };

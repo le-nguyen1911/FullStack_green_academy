@@ -4,13 +4,20 @@ import "./index.css";
 import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
-import store from "./redux/store"; 
+import store from "./redux/store";
+import { restoreSession, forceLogout } from "./redux/slices/authSlice";
 import "bootstrap/dist/css/bootstrap.min.css";
+
+
+if (localStorage.getItem("hasSession")) store.dispatch(restoreSession());
+
+window.addEventListener("auth:logout", () => store.dispatch(forceLogout()));
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <Provider store={store}>
       <BrowserRouter>
-          <App />
+        <App />
       </BrowserRouter>
     </Provider>
   </StrictMode>,

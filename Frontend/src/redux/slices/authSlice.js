@@ -18,8 +18,10 @@ export const restoreSession = createAsyncThunk(
       await refreshAccessToken();
       const { data } = await api.get("/auth/me");
       return normalizeUser(data.user);
-    } catch {
-      localStorage.removeItem("hasSession");
+    } catch (e) {
+      // Chỉ xóa cờ khi server xác nhận phiên không còn hợp lệ (401).
+      // Lỗi mạng thì giữ cờ để lần tải lại sau còn thử khôi phục được
+      if (e.response?.status === 401) localStorage.removeItem("hasSession");
       return rejectWithValue(null);
     }
   },
@@ -31,13 +33,14 @@ export const login = createAsyncThunk(
     try {
       const { data } = await api.post("/auth/login", { email, password });
       setAccessToken(data.accessToken);
-      localStorage.setItem("hasSession", "1");
+      localStorage.setItem("hasSession", "1"); 
       return normalizeUser(data.user);
     } catch (e) {
       return rejectWithValue(getError(e));
     }
   },
 );
+
 export const register = createAsyncThunk(
   "auth/register",
   async (
@@ -52,13 +55,13 @@ export const register = createAsyncThunk(
         address,
         phone,
       });
-
       return data;
     } catch (error) {
       return rejectWithValue(getError(error));
     }
   },
 );
+
 export const logout = createAsyncThunk("auth/logout", async () => {
   try {
     await api.post("/auth/logout");
@@ -76,11 +79,23 @@ const authSlice = createSlice({
     loginError: "",
     registerStatus: "idle",
     registerError: "",
-    data: null,
+    registerResult: null,
   },
   reducers: {
     forceLogout(state) {
       state.user = null;
+      state.initializing = false;
+    },
+    updateUser(state, action) {
+      if (state.user) state.user = { ...state.user, ...action.payload };
+    },
+    resetRegister(state) {
+      state.registerStatus = "idle";
+      state.registerError = "";
+      state.registerResult = null;
+    },
+    clearLoginError(state) {
+      state.loginError = "";
     },
   },
   extraReducers: (b) => {
@@ -99,6 +114,7 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (s, a) => {
         s.user = a.payload;
         s.loginStatus = "idle";
+        s.loginError = "";
       })
       .addCase(login.rejected, (s, a) => {
         s.loginStatus = "idle";
@@ -106,6 +122,7 @@ const authSlice = createSlice({
       })
       .addCase(logout.fulfilled, (s) => {
         s.user = null;
+        s.loginError = "";
       })
       .addCase(register.pending, (s) => {
         s.registerStatus = "loading";
@@ -113,7 +130,7 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (s, a) => {
         s.registerStatus = "succeeded";
-        s.data = a.payload;
+        s.registerResult = a.payload;
       })
       .addCase(register.rejected, (s, a) => {
         s.registerStatus = "failed";
@@ -122,5 +139,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { forceLogout } = authSlice.actions;
+export const { forceLogout, updateUser, resetRegister, clearLoginError   } = authSlice.actions;
 export default authSlice.reducer;

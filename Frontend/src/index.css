@@ -14,10 +14,51 @@ body {
   font-family: Arial, sans-serif;
   font-size: 17px;
 }
+/* OTP input */
+.custom-otp .p-inputotp-input,
+.custom-otp input {
+  width: 48px !important;
+  height: 52px !important;
+  padding: 0 !important;
+
+  background: #ffffff !important;
+  color: #563b29 !important;
+
+  border: 2px solid #c8b5a5 !important;
+  border-radius: 10px !important;
+
+  font-size: 23px !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Focus */
+.custom-otp .p-inputotp-input:focus,
+.custom-otp input:focus {
+  border-color: #6f4e37 !important;
+  box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.2) !important;
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+  .custom-otp {
+    gap: 7px;
+  }
+
+  .custom-otp .p-inputotp-input,
+  .custom-otp input {
+    width: 42px !important;
+    height: 46px !important;
+    font-size: 20px !important;
+  }
+}
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans: "Geist Variable", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -137,4 +178,13 @@ body {
   html {
     @apply font-sans;
   }
+}
+
+/* OTP container */
+.custom-otp {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
 }

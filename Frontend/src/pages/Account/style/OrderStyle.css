@@ -1,0 +1,18 @@
+.orderStepper {
+.p-step-active .p-step-number {
+    background: #6f4e37 !important;
+    border-color: #6f4e37 !important;
+    color: #fff !important;
+}
+.p-step-active .p-step-title {
+    color: #6f4e37 !important;
+    font-weight: 600;
+}
+.p-step-active + .p-step .p-step-separator,
+.p-step-active .p-step-separator {
+    background: #6f4e37 !important;
+}
+.p-step-number {
+    border-color: #d6c2b2;
+}
+}

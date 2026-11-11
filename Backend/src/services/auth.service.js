@@ -16,7 +16,7 @@ const {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
-const MAX_PASSWORD = 72; 
+const MAX_PASSWORD = 72;
 const OTP_MAX_ATTEMPTS = 5;
 const OTP_RESEND_SECONDS = 60;
 const OTP_FAIL =
@@ -90,6 +90,8 @@ const login = async ({ email, password }) => {
       id: user.id,
       full_name: user.full_name,
       email: user.email,
+      phone: user.phone,
+      address: user.address,
       role: user.role_name,
       permissions: [...(await getUserPermissions(user.id))],
     },
@@ -142,10 +144,9 @@ const changePassword = async (
   const newHash = await bcrypt.hash(newPassword, 12);
   await withTransaction(async (conn) => {
     await userModel.updatePassword(userId, newHash, conn);
-    await refreshTokenModel.deleteByUser(userId, conn); 
+    await refreshTokenModel.deleteByUser(userId, conn);
   });
 };
-
 
 const forgotPassword = async (email) => {
   const cleanEmail = email?.trim().toLowerCase();
@@ -158,7 +159,7 @@ const forgotPassword = async (email) => {
   const age = await passwordResetModel.latestAgeSeconds(user.id);
   if (age !== null && age < OTP_RESEND_SECONDS) return;
 
-  const otp = String(randomInt(100000, 1000000)); 
+  const otp = String(randomInt(100000, 1000000));
   const otpHash = await bcrypt.hash(otp, 10);
 
   await withTransaction(async (conn) => {
@@ -176,7 +177,6 @@ const forgotPassword = async (email) => {
   if (process.env.NODE_ENV !== "production")
     console.log(`[DEV] OTP của ${cleanEmail}: ${otp}`);
 
-
   sendResetOTP(cleanEmail, otp).catch(async (err) => {
     console.error("Gửi mail OTP thất bại:", err.message);
     await passwordResetModel.deleteByUser(user.id).catch(() => {});
@@ -190,7 +190,6 @@ const resetPassword = async ({ email, otp, newPassword, confirmPassword }) => {
   if (!/^\d{6}$/.test(String(otp))) throw new AppError(400, "OTP không hợp lệ");
   assertNewPassword(newPassword, confirmPassword);
 
-  
   const failure = await withTransaction(async (conn) => {
     const user = await userModel.findByEmail(cleanEmail, conn);
     if (!user) return OTP_FAIL;
@@ -208,21 +207,70 @@ const resetPassword = async ({ email, otp, newPassword, confirmPassword }) => {
       await bcrypt.hash(newPassword, 12),
       conn,
     );
-    await passwordResetModel.markUsed(record.id, conn); 
-    await refreshTokenModel.deleteByUser(user.id, conn); 
+    await passwordResetModel.markUsed(record.id, conn);
+    await refreshTokenModel.deleteByUser(user.id, conn);
     return null;
   });
 
   if (failure) throw new AppError(400, failure);
 };
+const PHONE_RE = /^[0-9+\-\s]{8,20}$/;
 
+const updateProfile = async (userId, { full_name, phone, address }) => {
+  const name = full_name?.trim();
+  if (!name) throw new AppError(400, "Họ tên không được để trống");
+  if (name.length > 100) throw new AppError(400, "Họ tên tối đa 100 ký tự");
+  if (phone && !PHONE_RE.test(phone.trim()))
+    throw new AppError(400, "Số điện thoại không hợp lệ");
+  if (address && address.length > 255)
+    throw new AppError(400, "Địa chỉ tối đa 255 ký tự");
+
+  await userModel.updateProfile(userId, {
+    full_name: name,
+    phone: phone?.trim(),
+    address: address?.trim(),
+  });
+  return getMe(userId); // trả user mới để frontend cập nhật Redux
+};
+const verify_otp = async ({ email, otp }) => {
+  const cleanEmail = email?.trim().toLowerCase();
+
+  if (!cleanEmail || !otp) {
+    throw new AppError(400, "Vui lòng nhập email và OTP");
+  }
+
+  if (!/^\d{6}$/.test(String(otp))) {
+    throw new AppError(400, "OTP không hợp lệ");
+  }
+  const failure = await withTransaction(async (conn) => {
+    const user = await userModel.findByEmail(cleanEmail, conn);
+    if (!user) return OTP_FAIL;
+
+    const record = await passwordResetModel.findActiveForUpdate(user.id, conn);
+
+    if (!record || record.attempts >= OTP_MAX_ATTEMPTS) {
+      return OTP_FAIL;
+    }
+
+    if (!(await bcrypt.compare(String(otp), record.otp_hash))) {
+      await passwordResetModel.incrementAttempts(record.id, conn);
+      return OTP_FAIL;
+    }
+
+    return null;
+  });
+
+  if (failure) throw new AppError(400, failure);
+};
 module.exports = {
   register,
   login,
   refresh,
   logout,
   getMe,
+  updateProfile,
   changePassword,
   forgotPassword,
   resetPassword,
+  verify_otp,
 };

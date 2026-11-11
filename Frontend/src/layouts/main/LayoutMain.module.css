@@ -1,0 +1,11 @@
+.hero {
+    background-image: url("https://cafengon.monamedia.net/wp-content/uploads/2023/04/bread-bg.png");
+    background-position: center;
+    background-repeat: repeat;
+    background-size: cover;
+    padding: 40px 0;
+}
+
+.hero h1 {
+    margin-bottom: 0;
+}

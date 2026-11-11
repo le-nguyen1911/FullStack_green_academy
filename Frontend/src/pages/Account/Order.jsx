@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Stepper } from "@primereact/ui/stepper";
-import { Dialog } from "primereact/dialog";
 import { Button } from "@primereact/ui/button";
 import "./style/OrderStyle.css";
 import { useAuth } from "@/hooks/useAuth";

@@ -1,75 +1,341 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { useAuth } from "../../hooks/useAuth";
-import { logout } from "../../redux/slices/authSlice";
-import { isManagerRole } from "../../util/roles";
+import React, { useState } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import logo from "../../assets/logo.png";
+import Breadcrumb from "../../components/Breadcrumb/Breadcrumb";
+import styles from "./LayoutMain.module.css";
 
-export default function LayoutMain() {
-  const { user } = useAuth();
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+const heroTitleMap = {
+  "/cart": "GIỎ HÀNG",
+  "/wishlist": "YÊU THÍCH",
+  "/about": "GIỚI THIỆU",
+  "/products": "SẢN PHẨM",
+  "/new": "TIN TỨC",
+  "/contact": "LIÊN HỆ",
+};
+
+const navLinks = [
+  { to: "/about", label: "GIỚI THIỆU" },
+  { to: "/products", label: "SẢN PHẨM" },
+  { to: "/new", label: "TIN TỨC" },
+  { to: "/contact", label: "LIÊN HỆ" },
+];
+
+const LayoutMain = () => {
+  const location = useLocation();
+  const [carts] = useState([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const hideHero =
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname.startsWith("/account");
+
+  const heroTitle = heroTitleMap[location.pathname] || "";
+
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b bg-white">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-6">
-          <Link to="/" className="font-bold text-lg text-amber-900">
-            THE COFFEE
-          </Link>
-          <nav className="flex gap-4">
-            <NavLink
-              to="/products"
-              className={({ isActive }) =>
-                isActive ? "text-amber-900 font-medium" : "text-stone-600"
-              }
-            >
-              Sản phẩm
-            </NavLink>
-          </nav>
-
-          <div className="ml-auto flex items-center gap-4 text-sm">
-            {user ? (
-              <>
-                {isManagerRole(user.role) && (
-                  <Link to="/manager" className="underline">
-                    Quản lý
+    <>
+      {/* NAVBAR */}
+      <nav className="w-full border-b border-gray-200 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="hidden lg:grid lg:grid-cols-3 lg:items-center lg:py-4">
+            <ul className="flex items-center gap-5 xl:gap-7 text-black ">
+              {navLinks.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    className="whitespace-nowrap text-sm font-bold text-gray-800! transition-colors hover:text-[#6f4e37]! no-underline!"
+                  >
+                    {item.label}
                   </Link>
-                )}
-                <Link
-                  to="/account/profile  "
-                  className="text-stone-600 hover:underline"
-                >
-                  Đổi mật khẩu
-                </Link>
-                <span>{user.full_name}</span>
-                <button
-                  onClick={() => dispatch(logout(), navigate("/login"))}
-                  className="text-stone-500 hover:underline"
-                >
-                  Đăng xuất
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login">Đăng nhập</Link>
-                <Link
-                  to="/register"
-                  className="px-3 py-1 bg-amber-900 text-white rounded"
-                >
-                  Đăng ký
-                </Link>
-              </>
-            )}
+                </li>
+              ))}
+            </ul>
+
+            <Link to="/" className="flex justify-center">
+              <img
+                src={logo}
+                alt="Logo"
+                className="h-auto w-[150px] xl:w-[170px]"
+              />
+            </Link>
+
+            <div className="flex items-center justify-end gap-5">
+              <div className="flex justify-between min-w-0 items-center border-b border-gray-300 px-2 py-2 border rounded-3xl w-[250px]">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm"
+                  className="w-24 border-0 bg-transparent text-sm outline-none xl:w-32"
+                />
+                <i className="pi pi-search text-[#6f4e37]! text-xl!" />
+              </div>
+
+              <Link
+                to="/wishlist"
+                className="text-gray-800! transition-colors hover:text-[#6f4e37]!"
+              >
+                <i className="pi pi-heart text-xl!" />
+              </Link>
+
+              <Link
+                to="/account"
+                className="text-gray-800! transition-colors hover:text-[#6f4e37]"
+              >
+                <i className="pi pi-user text-xl!" />
+              </Link>
+
+              <Link
+                to="/cart"
+                className="relative text-gray-800! transition-colors hover:text-[#6f4e37]"
+              >
+                <i className="pi pi-shopping-cart text-xl!" />
+                <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6f4e37] px-1 text-xs text-white">
+                  {carts.length}
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between py-3 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle navigation"
+              aria-expanded={menuOpen}
+              className="flex h-10 w-10 items-center justify-center rounded-md text-gray-800 hover:bg-gray-100"
+            >
+              <i
+                className={`pi ${menuOpen ? "pi-times" : "pi-bars"} text-xl`}
+              />
+            </button>
+
+            <Link to="/" onClick={closeMenu}>
+              <img
+                src={logo}
+                alt="Logo"
+                className="h-auto w-[130px] sm:w-[150px]"
+              />
+            </Link>
+
+            <Link
+              to="/cart"
+              className="relative flex h-10 w-10 items-center justify-center text-gray-800"
+            >
+              <i className="pi pi-shopping-cart text-xl" />
+              <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6f4e37] px-1 text-xs text-white">
+                {carts.length}
+              </span>
+            </Link>
+          </div>
+
+          <div
+            className={`grid transition-all duration-300 lg:hidden ${
+              menuOpen
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="border-t border-gray-100 py-3">
+                <ul className="flex flex-col">
+                  {navLinks.map((item) => (
+                    <li key={item.to}>
+                      <Link
+                        to={item.to}
+                        onClick={closeMenu}
+                        className="block border-b border-gray-100 px-3 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 hover:text-[#6f4e37]"
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-4 flex items-center gap-4 px-3">
+                  <div className="flex flex-1 items-center rounded-md border border-gray-300 px-3 py-2">
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm"
+                      className="w-full bg-transparent text-sm outline-none"
+                    />
+                    <i className="pi pi-search text-gray-500" />
+                  </div>
+
+                  <Link
+                    to="/wishlist"
+                    onClick={closeMenu}
+                    className="text-gray-800"
+                  >
+                    <i className="pi pi-heart text-xl" />
+                  </Link>
+
+                  <Link
+                    to="/account"
+                    onClick={closeMenu}
+                    className="text-gray-800"
+                  >
+                    <i className="pi pi-user text-xl" />
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="flex-1">
+      {!hideHero && (
+        <div className={styles.hero}>
+          <div className="container mx-auto px-4">
+            {heroTitle && (
+              <h1 className="text-center text-2xl font-bold sm:text-3xl lg:text-4xl">
+                {heroTitle}
+              </h1>
+            )}
+            <div className="mt-2 text-center text-sm sm:text-base">
+              <Breadcrumb />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className="min-h-[50vh] w-full">
         <Outlet />
       </main>
 
-      <footer className="border-t py-6 text-center text-sm text-stone-500">
-        © Coffee Shop
+      <footer className="bg-[#f8f8f8]">
+        <div className="container mx-auto px-4 py-10 lg:py-14">
+          <div className="grid grid-cols-1 gap-8 border-b border-gray-300 pb-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
+            <div className="sm:col-span-2 lg:col-span-1">
+              <img
+                src={logo}
+                alt="Logo"
+                className="mb-4 h-auto w-[160px] sm:w-[180px]"
+              />
+
+              <p className="text-sm leading-7 text-gray-600">
+                Cà phê nguyên chất được chế biến 100% nguyên chất, không pha
+                trộn với bất kỳ loại hạt cà phê nào khác.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="mb-4 text-base font-bold text-gray-900">
+                DANH MỤC
+              </h3>
+
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li>
+                  <Link to="/" className="hover:text-[#6f4e37]">
+                    Trang chủ
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="hover:text-[#6f4e37]">
+                    Giới thiệu
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products" className="hover:text-[#6f4e37]">
+                    Sản phẩm
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/new" className="hover:text-[#6f4e37]">
+                    Tin tức
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="hover:text-[#6f4e37]">
+                    Liên hệ
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="mb-4 text-base font-bold text-gray-900">HỖ TRỢ</h3>
+
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li>Câu hỏi thường gặp</li>
+                <li>Dịch vụ khách hàng</li>
+                <li>Vị trí cửa hàng</li>
+                <li>Sản phẩm bán chạy</li>
+                <li>Manufactures</li>
+              </ul>
+            </div>
+
+            {/* POLICY */}
+            <div>
+              <h3 className="mb-4 text-base font-bold text-gray-900">
+                CHÍNH SÁCH
+              </h3>
+
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li>Chính sách bảo mật</li>
+                <li>Chính sách giao hàng</li>
+                <li>Chính sách đổi trả</li>
+                <li>Chính sách bảo hành</li>
+                <li>Điều khoản & điều kiện</li>
+              </ul>
+            </div>
+
+            <div className="sm:col-span-2 lg:col-span-1">
+              <h3 className="mb-4 text-base font-bold text-gray-900">
+                ĐĂNG KÝ NHẬN TIN TỨC
+              </h3>
+
+              <p className="mb-4 text-sm leading-6 text-gray-600">
+                Đăng ký ngay để nhận các tin tức khuyến mãi mới nhất.
+              </p>
+
+              <div className="flex w-full overflow-hidden rounded-md border border-gray-300 bg-white">
+                <input
+                  type="email"
+                  placeholder="Nhập email"
+                  className="min-w-0 flex-1 px-3 py-3 text-sm outline-none"
+                />
+                <button
+                  type="button"
+                  className="shrink-0 bg-[#6f4e37] px-3 text-xs font-semibold text-white transition hover:bg-[#513824] sm:px-4"
+                >
+                  ĐĂNG KÝ
+                </button>
+              </div>
+
+              <div className="mt-5 flex items-center gap-5 text-gray-600">
+                <a
+                  href="#"
+                  aria-label="Facebook"
+                  className="hover:text-[#6f4e37]"
+                >
+                  <i className="fab fa-facebook-f text-lg" />
+                </a>
+                <a
+                  href="#"
+                  aria-label="Instagram"
+                  className="hover:text-[#6f4e37]"
+                >
+                  <i className="fab fa-instagram text-lg" />
+                </a>
+                <a
+                  href="#"
+                  aria-label="Youtube"
+                  className="hover:text-[#6f4e37]"
+                >
+                  <i className="fab fa-youtube text-lg" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 text-center text-xs text-gray-500 sm:text-sm">
+            © Thiết kế và lập trình bởi MONA.Media
+          </div>
+        </div>
       </footer>
-    </div>
+    </>
   );
-}
+};
+
+export default LayoutMain;

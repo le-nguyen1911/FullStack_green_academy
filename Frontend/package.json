@@ -27,7 +27,6 @@
     "dotenv": "^18.0.10",
     "lucide-react": "^1.57.0",
     "primeicons": "^8.0.2",
-    "primereact": "^10.9.9",
     "react": "^19.2.8",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.8",

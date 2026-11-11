@@ -15,6 +15,7 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 
 const primereact = {
+  license: import.meta.env.VITE_PRIMEUI_LICENSE,
   theme: {
     preset: Aura,
     options: {
@@ -26,7 +27,7 @@ axios.defaults.baseURL = "http://localhost:3000/api";
 
 const App = () => {
   return (
-    <PrimeReactProvider license={import.meta.env.VITE_PRIMEUI_LICENSE}>
+    <PrimeReactProvider {...primereact}>
       <Routes>
         <Route element={<LayoutMain />}>
           <Route path="/" element={<Home />} />

@@ -1,11 +1,12 @@
 import { Route, Routes } from "react-router-dom";
 import axios from "axios";
-import LayoutMain from "./layouts/LayoutMain.jsx";
+import LayoutMain from "./layouts/main/LayoutMain.jsx";
 import "primeicons/primeicons.css";
-import ProtectedRoute from "./components/ProtectedRoute";
 import { PrimeReactProvider } from "@primereact/core";
 import Aura from "@primeuix/themes/aura";
 import Login from "./pages/Login.jsx";
+import Home from "./pages/Home.jsx";
+import Register from "./pages/Register.jsx";
 
 const primereact = {
   theme: {
@@ -22,9 +23,10 @@ const App = () => {
     <PrimeReactProvider {...primereact}>
       <Routes>
         <Route element={<LayoutMain />}>
-        
+          <Route path="/" element={<Home />} />
         </Route>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </PrimeReactProvider>
   );

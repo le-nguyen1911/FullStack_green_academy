@@ -1,5 +1,5 @@
 const db = require("../config/database");
-
+const { randomUUID } = require("crypto");
 
 const findByEmailWithRole = async (email) => {
   const [rows] = await db.query(
@@ -22,11 +22,20 @@ const findByIdWithRole = async (id) => {
 };
 
 const emailExists = async (email) => {
-  const [rows] = await db.query("SELECT 1 FROM users WHERE email = ? LIMIT 1", [email]);
+  const [rows] = await db.query("SELECT 1 FROM users WHERE email = ? LIMIT 1", [
+    email,
+  ]);
   return rows.length > 0;
 };
 
-const create = async ({ roleId, fullName, email, passwordHash, phone, address }) => {
+const create = async ({
+  roleId,
+  fullName,
+  email,
+  passwordHash,
+  phone,
+  address,
+}) => {
   const id = randomUUID();
   await db.query(
     `INSERT INTO users (id, role_id, full_name, email, password, phone, address)
@@ -58,7 +67,6 @@ const countByRoleName = async (roleName) => {
   );
   return row.total;
 };
-
 
 const findByEmail = async (email, conn = db) => {
   const [rows] = await conn.query(

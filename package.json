@@ -1,0 +1,26 @@
+{
+  "name": "fullstack_green_academy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/le-nguyen1911/FullStack_green_academy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/le-nguyen1911/FullStack_green_academy/issues"
+  },
+  "homepage": "https://github.com/le-nguyen1911/FullStack_green_academy#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
+}

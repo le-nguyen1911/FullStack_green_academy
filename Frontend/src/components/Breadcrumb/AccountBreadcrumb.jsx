@@ -1,46 +1,43 @@
-import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import styles from "../Breadcrumb/style/AccountBreadcrumb.module.css";
-import { useAuth } from "@/hooks/useAuth";
-import { useDispatch } from "react-redux";
-import { logout } from "../../redux/slices/authSlice";
+import React from 'react'
+import { Link, useLocation } from 'react-router-dom';
+import styles from "./AccountBreadcrumb.module.css";
+
 const breadcrumbMap = {
-  "/account": "Tài khoản",
-  "/account/orders": "Đơn hàng",
-  "/account/profile": "Thông tin tài khoản",
+    "/account": "Tài khoản",
+    "/account/orders": "Đơn hàng",
+    "/account/address": "Địa chỉ",
+    "/account/profile": "Thông tin tài khoản",
+    "/account/password": "Đổi mật khẩu",
 };
-
 const AccountBreadcrumb = () => {
-  const dispatch = useDispatch();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const current = breadcrumbMap[location.pathname];
-  return (
-    <div className={styles.breadcrumb}>
-      <div className="pathaaction">
-        <Link to="/">Trang chủ</Link>
+    const location = useLocation()
 
-        <span>/</span>
+    const current = breadcrumbMap[location.pathname]
+    return (
+        <div className={styles.breadcrumb}>
+            <div className="pathaaction">
+                <Link to="/">Trang chủ</Link>
 
-        <Link to="/account">Tài khoản</Link>
+                <span>/</span>
 
-        {location.pathname !== "/account" && (
-          <>
-            <span>/</span>
+                <Link to="/account">Tài khoản</Link>
 
-            <span className={styles.active}>{current}</span>
-          </>
-        )}
-      </div>
+                {location.pathname !== "/account" && (
+                    <>
+                        <span>/</span>
 
-      <div
-        className={styles.logout}
-        onClick={() => dispatch(logout(), navigate("/login"))}
-      >
-        Đăng xuất
-      </div>
-    </div>
-  );
-};
+                        <span className={styles.active}>
+                            {current}
+                        </span>
+                    </>
+                )}
+            </div>
 
-export default AccountBreadcrumb;
+            <div className={styles.logout}>
+                Đăng xuất
+            </div>
+        </div>
+    )
+}
+
+export default AccountBreadcrumb

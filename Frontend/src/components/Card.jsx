@@ -54,11 +54,11 @@ const Card = () => {
         <Card.Footer className="flex items-center gap-2 mt-4">
           <Button className="flex-1" severity="secondary" variant="outlined">
             <Phone />
-            Call Us
+            Xem chi tiết
           </Button>
           <Button className="flex-1">
             <Globe />
-            Visit Site
+            Thêm Giỏ hàng
           </Button>
         </Card.Footer>
       </Card.Body>

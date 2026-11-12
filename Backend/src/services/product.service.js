@@ -1,17 +1,25 @@
 const AppError = require("../utils/AppError");
 const withTransaction = require("../utils/transaction");
 const productModel = require("../models/product.model");
+const uploadService = require("./upload.service");
 
 const GRIND_TYPES = ["WHOLE_BEAN", "FINE", "MEDIUM", "COARSE"];
 const SORT_KEYS = ["newest", "price_asc", "price_desc", "name_asc"];
 const STATUS_KEYS = ["all", "active", "inactive"];
-
-const readIds = (v) => (v ? String(v).split(",").map((s) => s.trim()).filter(Boolean).slice(0, 20) : []);
+const readIds = (v) =>
+  v
+    ? String(v)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 20)
+    : [];
 
 const readPrice = (v) => {
   if (v === undefined || v === "") return undefined;
   const n = Number(v);
-  if (!Number.isFinite(n) || n < 0) throw new AppError(400, "Giá lọc phải là số >= 0");
+  if (!Number.isFinite(n) || n < 0)
+    throw new AppError(400, "Giá lọc phải là số >= 0");
   return n;
 };
 
@@ -24,12 +32,15 @@ const readListQuery = (query) => {
     throw new AppError(400, "min_price không được lớn hơn max_price");
 
   return {
-    page, limit, offset: (page - 1) * limit,
+    page,
+    limit,
+    offset: (page - 1) * limit,
     sort: SORT_KEYS.includes(query.sort) ? query.sort : "newest",
     q: query.q?.trim().slice(0, 100) || undefined,
-    categoryIds: readIds(query.category_id),  
-    brandIds: readIds(query.brand_id),         
-    minPrice, maxPrice,
+    categoryIds: readIds(query.category_id),
+    brandIds: readIds(query.brand_id),
+    minPrice,
+    maxPrice,
   };
 };
 
@@ -133,16 +144,27 @@ const create = async (body) => {
 
 const update = async (id, body) => {
   assertProductFields(body);
+  await assertCatalogActive(body);
   const data = { ...body };
   if (data.name !== undefined) data.name = data.name.trim();
+
+  const touchesImages =
+    body.image_url !== undefined || body.images !== undefined;
+  const before = touchesImages ? await productModel.getImages(id) : null;
 
   const affected = await productModel.update(id, data);
   if (affected === null)
     throw new AppError(400, "Không có dữ liệu để cập nhật");
   if (!affected && !(await productModel.exists(id)))
     throw new AppError(404, "Không tìm thấy sản phẩm");
-};
 
+  if (before) {
+    const kept = new Set(imagesOf(await productModel.getImages(id)));
+    const removed = imagesOf(before).filter((u) => !kept.has(u));
+    if (removed.length)
+      uploadService.destroyUnused(removed).catch(console.error);
+  }
+};
 
 const remove = async (id) => {
   if (!(await productModel.softDelete(id)) && !(await productModel.exists(id)))
@@ -186,7 +208,6 @@ const removeVariant = async (variantId) => {
     throw new AppError(404, "Không tìm thấy biến thể");
 };
 
-
 const adjustStock = async (variantId, delta) => {
   if (!Number.isInteger(delta) || delta === 0 || Math.abs(delta) > 100000)
     throw new AppError(
@@ -218,6 +239,17 @@ const getPriceRange = async () => {
     max_price: Number(row.max_price ?? 0),
   };
 };
+const toList = (v) => {
+  if (Array.isArray(v)) return v;
+  try {
+    const x = JSON.parse(v);
+    return Array.isArray(x) ? x : [];
+  } catch {
+    return [];
+  }
+};
+const imagesOf = (row) =>
+  [row?.image_url, ...toList(row?.images)].filter(Boolean);
 module.exports = {
   listPublic,
   getPublic,
@@ -231,4 +263,5 @@ module.exports = {
   removeVariant,
   adjustStock,
   getPriceRange,
+  imagesOf,
 };

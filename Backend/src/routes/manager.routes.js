@@ -2,10 +2,15 @@ const router = require("express").Router();
 const { authenticate, authorize } = require("../middleware/auth.middleware");
 const { P } = require("../constants/permission");
 const productController = require("../controller/product.controller");
-
+const upload = require("../controller/upload.controller");
+const { uploadImages } = require("../middleware/upload.middleware");
 router.use(authenticate);
 
-//product
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  message: { message: "Tải ảnh quá nhiều, vui lòng thử lại sau" },
+});
 router.get(
   "/products",
   authorize(P.PRODUCT_READ),
@@ -47,5 +52,12 @@ router.patch(
   "/variants/:variantId/stock",
   authorize(P.PRODUCT_STOCK),
   productController.adjustStock,
+);
+router.post(
+  "/uploads/images",
+  authorize(P.PRODUCT_CREATE, P.PRODUCT_UPDATE, P.BRAND_MANAGE),
+  uploadLimiter,
+  uploadImages,
+  upload.images,
 );
 module.exports = router;

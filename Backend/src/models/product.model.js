@@ -230,7 +230,13 @@ const adjustStock = async (variantId, delta, conn = db) => {
   );
   return r.affectedRows;
 };
-
+const getImages = async (id) => {
+  const [rows] = await db.query(
+    "SELECT image_url, images FROM products WHERE id = ?",
+    [id],
+  );
+  return rows[0] || null;
+};
 module.exports = {
   list,
   findDetail,
@@ -243,4 +249,5 @@ module.exports = {
   softDeleteVariant,
   getVariantQuantity,
   adjustStock,
+  getImages,
 };

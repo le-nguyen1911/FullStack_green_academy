@@ -1,13 +1,24 @@
 const productService = require("../services/product.service");
+const brandModel = require("../models/brand.model");
+const categoryModel = require("../models/category.model");
 
 exports.listPublic = async (req, res) =>
   res.json(await productService.listPublic(req.query));
+
 exports.getPublic = async (req, res) =>
   res.json(await productService.getPublic(req.params.id));
-exports.listBrands = async (req, res) => res.json(await brandService.list());
+
+exports.listBrands = async (req, res) => res.json(await brandModel.list());
+
+exports.listcategories = async (req, res) =>
+  res.json(await categoryModel.list());
+
+exports.getPriceRange = async (req, res) =>
+  res.json(await productService.getPriceRange());
 
 exports.listManager = async (req, res) =>
   res.json(await productService.listManager(req.query));
+
 exports.getManager = async (req, res) =>
   res.json(await productService.getManager(req.params.id));
 
@@ -43,5 +54,5 @@ exports.adjustStock = async (req, res) =>
   res.json(
     await productService.adjustStock(req.params.variantId, req.body.delta),
   );
-exports.getPriceRange = async (req, res) =>
-  res.json(await service.getPriceRange());
+exports.getRelated = async (req, res) =>
+  res.json(await productService.getRelated(req.params.id));

@@ -4,6 +4,7 @@ const { P } = require("../constants/permission");
 const productController = require("../controller/product.controller");
 const upload = require("../controller/upload.controller");
 const { uploadImages } = require("../middleware/upload.middleware");
+const rateLimit = require("express-rate-limit");
 router.use(authenticate);
 
 const uploadLimiter = rateLimit({
@@ -11,6 +12,7 @@ const uploadLimiter = rateLimit({
   limit: 60,
   message: { message: "Tải ảnh quá nhiều, vui lòng thử lại sau" },
 });
+
 router.get(
   "/products",
   authorize(P.PRODUCT_READ),

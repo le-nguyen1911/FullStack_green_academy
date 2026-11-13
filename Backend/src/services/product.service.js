@@ -2,7 +2,7 @@ const AppError = require("../utils/AppError");
 const withTransaction = require("../utils/transaction");
 const productModel = require("../models/product.model");
 const uploadService = require("./upload.service");
-
+const db = require("../config/database");
 const GRIND_TYPES = ["WHOLE_BEAN", "FINE", "MEDIUM", "COARSE"];
 const SORT_KEYS = ["newest", "price_asc", "price_desc", "name_asc"];
 const STATUS_KEYS = ["all", "active", "inactive"];
@@ -250,6 +250,11 @@ const toList = (v) => {
 };
 const imagesOf = (row) =>
   [row?.image_url, ...toList(row?.images)].filter(Boolean);
+const getRelated = async (id) => {
+  if (!(await productModel.exists(id)))
+    throw new AppError(404, "Không tìm thấy sản phẩm");
+  return (await productModel.findRelated(id, 8)).map(decorate);
+};
 module.exports = {
   listPublic,
   getPublic,
@@ -264,4 +269,5 @@ module.exports = {
   adjustStock,
   getPriceRange,
   imagesOf,
+  getRelated,
 };

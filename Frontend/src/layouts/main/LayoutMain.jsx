@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+
 import logo from "../../assets/logo.png";
 import Breadcrumb from "../../components/Breadcrumb/Breadcrumb";
 import styles from "./LayoutMain.module.css";
@@ -22,8 +23,11 @@ const navLinks = [
 
 const LayoutMain = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const [carts] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [keyword, setKeyword] = useState("");
 
   const hideHero =
     location.pathname === "/" ||
@@ -34,13 +38,24 @@ const LayoutMain = () => {
 
   const closeMenu = () => setMenuOpen(false);
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    const search = keyword.trim();
+
+    if (!search) return;
+
+    navigate(`/products?q=${encodeURIComponent(search)}`);
+
+    closeMenu();
+  };
+
   return (
     <>
-      {/* NAVBAR */}
       <nav className="w-full border-b border-gray-200 bg-white">
         <div className="container mx-auto px-4">
           <div className="hidden lg:grid lg:grid-cols-3 lg:items-center lg:py-4">
-            <ul className="flex items-center gap-5 xl:gap-7 text-black ">
+            <ul className="flex items-center gap-5 xl:gap-7 text-black">
               {navLinks.map((item) => (
                 <li key={item.to}>
                   <Link
@@ -52,7 +67,6 @@ const LayoutMain = () => {
                 </li>
               ))}
             </ul>
-
             <Link to="/" className="flex justify-center">
               <img
                 src={logo}
@@ -60,43 +74,47 @@ const LayoutMain = () => {
                 className="h-auto w-[150px] xl:w-[170px]"
               />
             </Link>
-
             <div className="flex items-center justify-end gap-5">
-              <div className="flex justify-between min-w-0 items-center border-b border-gray-300 px-2 py-2 border rounded-3xl w-[250px]">
+              <form
+                onSubmit={handleSearch}
+                className="flex justify-between min-w-0 items-center border border-gray-300 px-3 py-2 rounded-3xl w-[250px]"
+              >
                 <input
                   type="text"
-                  placeholder="Tìm kiếm"
-                  className="w-24 border-0 bg-transparent text-sm outline-none xl:w-32"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Tìm kiếm sản phẩm..."
+                  className="w-full min-w-0 border-0 bg-transparent text-sm outline-none"
                 />
-                <i className="pi pi-search text-[#6f4e37]! text-xl!" />
-              </div>
 
+                <button type="submit" aria-label="Tìm kiếm sản phẩm">
+                  <i className="pi pi-search text-[#6f4e37]! text-xl!" />
+                </button>
+              </form>
               <Link
                 to="/wishlist"
                 className="text-gray-800! transition-colors hover:text-[#6f4e37]!"
               >
                 <i className="pi pi-heart text-xl!" />
               </Link>
-
               <Link
                 to="/account"
                 className="text-gray-800! transition-colors hover:text-[#6f4e37]"
               >
                 <i className="pi pi-user text-xl!" />
               </Link>
-
               <Link
                 to="/cart"
-                className="relative text-gray-800! transition-colors hover:text-[#6f4e37]"
+                className="relative text-gray-800! transition-colors hover:text-[#6f4e37] no-underline!"
               >
-                <i className="pi pi-shopping-cart text-xl!" />
+                <i className="pi pi-shopping-cart text-xl! " />
+
                 <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6f4e37] px-1 text-xs text-white">
                   {carts.length}
                 </span>
               </Link>
             </div>
           </div>
-
           <div className="flex items-center justify-between py-3 lg:hidden">
             <button
               type="button"
@@ -109,7 +127,6 @@ const LayoutMain = () => {
                 className={`pi ${menuOpen ? "pi-times" : "pi-bars"} text-xl`}
               />
             </button>
-
             <Link to="/" onClick={closeMenu}>
               <img
                 src={logo}
@@ -117,18 +134,17 @@ const LayoutMain = () => {
                 className="h-auto w-[130px] sm:w-[150px]"
               />
             </Link>
-
             <Link
               to="/cart"
-              className="relative flex h-10 w-10 items-center justify-center text-gray-800"
+              className="relative flex h-10 w-10 items-center justify-center text-gray-800! no-underline!"
             >
               <i className="pi pi-shopping-cart text-xl" />
+
               <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6f4e37] px-1 text-xs text-white">
                 {carts.length}
               </span>
             </Link>
           </div>
-
           <div
             className={`grid transition-all duration-300 lg:hidden ${
               menuOpen
@@ -144,28 +160,36 @@ const LayoutMain = () => {
                       <Link
                         to={item.to}
                         onClick={closeMenu}
-                        className="block border-b border-gray-100 px-3 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 hover:text-[#6f4e37]"
+                        className="block border-b border-gray-100 px-3 py-3 text-sm font-semibold text-gray-800! hover:bg-gray-50 hover:text-[#6f4e37] no-underline! "
                       >
                         {item.label}
                       </Link>
                     </li>
                   ))}
                 </ul>
-
-                <div className="mt-4 flex items-center gap-4 px-3">
-                  <div className="flex flex-1 items-center rounded-md border border-gray-300 px-3 py-2">
+                <form
+                  onSubmit={handleSearch}
+                  className="mt-4 flex items-center gap-2 px-3"
+                >
+                  <div className="flex flex-1 min-w-0 items-center rounded-md border border-gray-300 px-3 py-2">
                     <input
                       type="text"
-                      placeholder="Tìm kiếm"
-                      className="w-full bg-transparent text-sm outline-none"
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      placeholder="Tìm kiếm sản phẩm..."
+                      className="w-full min-w-0 bg-transparent text-sm outline-none"
                     />
-                    <i className="pi pi-search text-gray-500" />
-                  </div>
 
+                    <button type="submit" aria-label="Tìm kiếm sản phẩm">
+                      <i className="pi pi-search text-gray-500" />
+                    </button>
+                  </div>
+                </form>
+                <div className="mt-4 flex items-center gap-6 px-3">
                   <Link
                     to="/wishlist"
                     onClick={closeMenu}
-                    className="text-gray-800"
+                    className="text-gray-800! hover:text-[#6f4e37]"
                   >
                     <i className="pi pi-heart text-xl" />
                   </Link>
@@ -173,7 +197,7 @@ const LayoutMain = () => {
                   <Link
                     to="/account"
                     onClick={closeMenu}
-                    className="text-gray-800"
+                    className="text-gray-800! hover:text-[#6f4e37]"
                   >
                     <i className="pi pi-user text-xl" />
                   </Link>
@@ -183,7 +207,6 @@ const LayoutMain = () => {
           </div>
         </div>
       </nav>
-
       {!hideHero && (
         <div className={styles.hero}>
           <div className="container mx-auto px-4">
@@ -192,17 +215,16 @@ const LayoutMain = () => {
                 {heroTitle}
               </h1>
             )}
+
             <div className="mt-2 text-center text-sm sm:text-base">
               <Breadcrumb />
             </div>
           </div>
         </div>
       )}
-
       <main className="min-h-[50vh] w-full">
         <Outlet />
       </main>
-
       <footer className="bg-[#f8f8f8]">
         <div className="container mx-auto px-4 py-10 lg:py-14">
           <div className="grid grid-cols-1 gap-8 border-b border-gray-300 pb-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
@@ -230,21 +252,25 @@ const LayoutMain = () => {
                     Trang chủ
                   </Link>
                 </li>
+
                 <li>
                   <Link to="/about" className="hover:text-[#6f4e37]">
                     Giới thiệu
                   </Link>
                 </li>
+
                 <li>
                   <Link to="/products" className="hover:text-[#6f4e37]">
                     Sản phẩm
                   </Link>
                 </li>
+
                 <li>
                   <Link to="/new" className="hover:text-[#6f4e37]">
                     Tin tức
                   </Link>
                 </li>
+
                 <li>
                   <Link to="/contact" className="hover:text-[#6f4e37]">
                     Liên hệ
@@ -264,8 +290,6 @@ const LayoutMain = () => {
                 <li>Manufactures</li>
               </ul>
             </div>
-
-            {/* POLICY */}
             <div>
               <h3 className="mb-4 text-base font-bold text-gray-900">
                 CHÍNH SÁCH
@@ -279,7 +303,6 @@ const LayoutMain = () => {
                 <li>Điều khoản & điều kiện</li>
               </ul>
             </div>
-
             <div className="sm:col-span-2 lg:col-span-1">
               <h3 className="mb-4 text-base font-bold text-gray-900">
                 ĐĂNG KÝ NHẬN TIN TỨC
@@ -295,6 +318,7 @@ const LayoutMain = () => {
                   placeholder="Nhập email"
                   className="min-w-0 flex-1 px-3 py-3 text-sm outline-none"
                 />
+
                 <button
                   type="button"
                   className="shrink-0 bg-[#6f4e37] px-3 text-xs font-semibold text-white transition hover:bg-[#513824] sm:px-4"
@@ -302,7 +326,6 @@ const LayoutMain = () => {
                   ĐĂNG KÝ
                 </button>
               </div>
-
               <div className="mt-5 flex items-center gap-5 text-gray-600">
                 <a
                   href="#"
@@ -311,6 +334,7 @@ const LayoutMain = () => {
                 >
                   <i className="fab fa-facebook-f text-lg" />
                 </a>
+
                 <a
                   href="#"
                   aria-label="Instagram"
@@ -318,6 +342,7 @@ const LayoutMain = () => {
                 >
                   <i className="fab fa-instagram text-lg" />
                 </a>
+
                 <a
                   href="#"
                   aria-label="Youtube"

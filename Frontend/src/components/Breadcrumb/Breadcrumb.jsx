@@ -5,12 +5,11 @@ import styles from "../Breadcrumb/style/Breadcrumb.module.css";
 const breadcrumbMap = {
   "/cart": "Giỏ hàng",
   "/wishlist": "Yêu thích",
-  "/gioi-thieu": "Giới thiệu",
-  "/san-pham": "Sản phẩm",
-  "/tin-tuc": "Tin tức",
-  "/lien-he": "Liên hệ", 
-  "/checkout" : "Thanh toán"
-
+  "/about": "Giới thiệu",
+  "/product": "Sản phẩm",
+  "/news": "Tin tức",
+  "/contact": "Liên hệ",
+  "/checkout": "Thanh toán",
 };
 
 const Breadcrumb = () => {

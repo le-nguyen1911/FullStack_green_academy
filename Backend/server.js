@@ -26,7 +26,7 @@ app.use(cookieParser());
 app.use("/api/auth", require("./src/routes/auth.routes"));
 app.use("/api/admin", require("./src/routes/admin.routes"));
 app.use("/api/manager", require("./src/routes/manager.routes"));
-app.use("/", require("./src/routes/public.routes"));
+app.use("/api", require("./src/routes/public.routes"));
 
 setInterval(
   () => {

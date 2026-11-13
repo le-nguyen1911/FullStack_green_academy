@@ -118,22 +118,45 @@ const list = async ({
 
 const findDetail = async (id, onlyActive) => {
   const [[product]] = await db.query(
-    `SELECT p.*, c.name AS category_name, b.name AS brand_name
+    `SELECT
+        p.*,
+        c.name AS category_name,
+        b.name AS brand_name,
+
+        (SELECT ROUND(AVG(r.rating), 1)
+         FROM reviews r
+         WHERE r.product_id = p.id
+        ) AS avg_rating,
+
+        (SELECT COUNT(*)
+         FROM reviews r
+         WHERE r.product_id = p.id
+        ) AS review_count
+
      FROM products p
      JOIN categories c ON c.id = p.category_id
      JOIN brands b ON b.id = p.brand_id
-     WHERE p.id = ? ${onlyActive ? "AND p.status = TRUE" : ""}`,
+
+     WHERE p.id = ?
+       ${onlyActive ? "AND p.status = TRUE" : ""}`,
     [id],
   );
+
   if (!product) return null;
 
   const [variants] = await db.query(
-    `SELECT * FROM product_variants
-     WHERE product_id = ? ${onlyActive ? "AND status = TRUE" : ""}
+    `SELECT *
+     FROM product_variants
+     WHERE product_id = ?
+       ${onlyActive ? "AND status = TRUE" : ""}
      ORDER BY price`,
     [id],
   );
-  return { ...product, variants };
+
+  return {
+    ...product,
+    variants,
+  };
 };
 
 const exists = async (id) => {
@@ -237,6 +260,28 @@ const getImages = async (id) => {
   );
   return rows[0] || null;
 };
+const findRelated = async (id, limit = 8) => {
+  const [rows] = await db.query(
+    `SELECT p.id, p.name, p.image_url, p.created_at, p.category_id, p.brand_id,
+            MIN(v.price) AS min_price, MAX(v.price) AS max_price,
+            COALESCE(SUM(v.quantity), 0) AS total_stock,
+            (SELECT ROUND(AVG(r.rating), 1) FROM reviews r WHERE r.product_id = p.id) AS avg_rating,
+            (SELECT COUNT(*) FROM reviews r WHERE r.product_id = p.id) AS review_count
+     FROM products base
+     JOIN products p ON p.id <> base.id
+                    AND (p.category_id = base.category_id OR p.brand_id = base.brand_id)
+     JOIN categories c ON c.id = p.category_id
+     JOIN brands b ON b.id = p.brand_id
+     LEFT JOIN product_variants v ON v.product_id = p.id AND v.status = TRUE
+     WHERE base.id = ? AND p.status = TRUE AND c.status = TRUE AND b.status = TRUE
+       AND EXISTS (SELECT 1 FROM product_variants x WHERE x.product_id = p.id AND x.status = TRUE)
+     GROUP BY p.id, base.category_id
+     ORDER BY (p.category_id = base.category_id) DESC, p.created_at DESC
+     LIMIT ?`,
+    [id, limit],
+  );
+  return rows;
+};
 module.exports = {
   list,
   findDetail,
@@ -250,4 +295,5 @@ module.exports = {
   getVariantQuantity,
   adjustStock,
   getImages,
+  findRelated,
 };

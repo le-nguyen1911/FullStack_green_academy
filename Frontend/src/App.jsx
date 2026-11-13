@@ -7,7 +7,6 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import LayoutMain from './layouts/main/LayoutMain';
 import Introduce from './pages/introduce/introduce';
-import AlignmentDemo2 from './pages/Homepage/AlignmentDemo2';
 
 const App = () => {
   return (

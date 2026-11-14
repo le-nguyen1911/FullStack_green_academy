@@ -15,6 +15,7 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ProductList from "./pages/ProductList.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
+import ChangePassword from "./pages/Account/ChangePassword.jsx";
 
 const primereact = {
   license: import.meta.env.VITE_PRIMEUI_LICENSE,
@@ -37,6 +38,7 @@ const App = () => {
             <Route index element={<Profile />} />
             <Route path="orders" element={<Order />} />
             <Route path="profile" element={<InformationPesonal />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
           <Route path="products" element={<ProductList />} />
           <Route path="products/:id" element={<ProductDetail />} />

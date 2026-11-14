@@ -8,6 +8,7 @@ const breadcrumbMap = {
   "/account": "Tài khoản",
   "/account/orders": "Đơn hàng",
   "/account/profile": "Thông tin tài khoản",
+  "/account/change-password": "Đổi mật khẩu",
 };
 
 const AccountBreadcrumb = () => {

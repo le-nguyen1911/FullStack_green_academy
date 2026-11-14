@@ -66,7 +66,7 @@ const Login = () => {
               placeholder="Nhập email"
               autoComplete="username"
               required
-              className="w-full p-3 rounded-lg outline-none"
+              className="w-full p-3 rounded-lg bg-white/90 text-gray-800 placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#D4A373]"
             />
           </div>
 
@@ -75,18 +75,19 @@ const Login = () => {
               Mật khẩu
             </label>
 
-            <IconField.Root>
+            <IconField.Root className="w-full relative flex items-center">
               <InputPassword
+                id="password"
                 name="password"
                 mask={mask}
                 value={form.password}
                 onChange={onChange}
                 placeholder="Nhập mật khẩu"
                 required
-                className="w-full p-3"
+                className="w-full p-3 pr-10 rounded-lg bg-white/90 text-gray-800 placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#D4A373]"
               />
 
-              <IconField.Inset>
+              <IconField.Inset className="text-gray-600 cursor-pointer">
                 {mask ? (
                   <Eye onClick={() => setMask(false)} />
                 ) : (

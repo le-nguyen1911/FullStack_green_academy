@@ -1,6 +1,7 @@
 import { useState } from "react";
+import ReviewSection from "./ReviewSection";
 
-export default function ProductDetailTabs({ description = "", reviews = [] }) {
+export default function ProductDetailTabs({ description = "", productId }) {
   const [activeTab, setActiveTab] = useState("description");
 
   const tabs = [
@@ -10,7 +11,7 @@ export default function ProductDetailTabs({ description = "", reviews = [] }) {
     },
     {
       id: "reviews",
-      label: `ĐÁNH GIÁ (${reviews.length})`,
+      label: "ĐÁNH GIÁ",
     },
   ];
 
@@ -57,45 +58,7 @@ export default function ProductDetailTabs({ description = "", reviews = [] }) {
 
       {activeTab === "reviews" && (
         <div className="space-y-5">
-          {reviews.length > 0 ? (
-            reviews.map((review) => (
-              <div key={review.id} className="border-b border-stone-100 pb-5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-stone-800">
-                    {review.user_name}
-                  </p>
-
-                  <span className="text-xs text-stone-400">
-                    {review.created_at}
-                  </span>
-                </div>
-
-                <div className="my-2 flex gap-1 text-amber-600">
-                  {Array.from({ length: 5 }, (_, index) => (
-                    <i
-                      key={index}
-                      className={
-                        index < Number(review.rating)
-                          ? "pi pi-star-fill"
-                          : "pi pi-star"
-                      }
-                    />
-                  ))}
-                </div>
-
-                <p className="text-sm leading-relaxed text-stone-600">
-                  {review.comment}
-                </p>
-              </div>
-            ))
-          ) : (
-            <div className="py-10 text-center">
-              <i className="pi pi-comments text-3xl text-stone-300" />
-              <p className="mt-3 text-sm text-stone-500">
-                Chưa có đánh giá nào cho sản phẩm này.
-              </p>
-            </div>
-          )}
+          <ReviewSection productId={productId} />
         </div>
       )}
     </section>

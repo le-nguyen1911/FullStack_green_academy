@@ -10,12 +10,14 @@ import {
 import ProductCard from "../components/Card";
 import Pagination from "../components/Panigation";
 import { formatVND } from "../util/format";
-
+import { Check } from "@primeicons/react/check";
+import { ChevronDown } from "@primeicons/react/chevron-down";
+import { Select } from "@primereact/ui/select";
 const SORTS = [
-  { value: "newest", label: "Mới nhất" },
-  { value: "price_asc", label: "Giá thấp đến cao" },
-  { value: "price_desc", label: "Giá cao đến thấp" },
-  { value: "name_asc", label: "Tên A đến Z" },
+  { label: "Mới nhất", value: "newest" },
+  { label: "Giá thấp đến cao", value: "price_asc" },
+  { label: "Giá cao đến thấp", value: "price_desc" },
+  { label: "Tên A đến Z", value: "name_asc" },
 ];
 
 const splitIds = (v) => v?.split(",").filter(Boolean) ?? [];
@@ -51,11 +53,9 @@ export default function ProductList() {
   const currentMax =
     price.max === "" ? maxBound : Math.min(maxBound, Number(price.max));
 
-  const minPercent =
-    ((currentMin - minBound) / (maxBound - minBound)) * 100;
+  const minPercent = ((currentMin - minBound) / (maxBound - minBound)) * 100;
 
-  const maxPercent =
-    ((currentMax - minBound) / (maxBound - minBound)) * 100;
+  const maxPercent = ((currentMax - minBound) / (maxBound - minBound)) * 100;
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -82,9 +82,7 @@ export default function ProductList() {
     const next = new URLSearchParams(params);
 
     Object.entries(patch).forEach(([key, value]) => {
-      value === "" || value == null
-        ? next.delete(key)
-        : next.set(key, value);
+      value === "" || value == null ? next.delete(key) : next.set(key, value);
     });
 
     if (!("page" in patch)) next.delete("page");
@@ -162,13 +160,13 @@ export default function ProductList() {
     setShowFilters(false);
   };
 
-  const from =
-    list.total === 0 ? 0 : (list.page - 1) * list.limit + 1;
+  const from = list.total === 0 ? 0 : (list.page - 1) * list.limit + 1;
 
   const to = Math.min(list.page * list.limit, list.total);
   const loading = list.status === "loading";
 
   const hasFilter = [...params.keys()].some((k) => k !== "page");
+  const selectedSort = params.get("sort") || "newest";
 
   const activeFilterCount =
     selectedCats.length +
@@ -180,15 +178,16 @@ export default function ProductList() {
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-3">
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              update({ q: keyword.trim() });
-            }}
+            onSubmit={(e) => e.preventDefault()}
             className="flex flex-1 min-w-0"
           >
             <input
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setKeyword(value);
+                update({ q: value.trim() });
+              }}
               placeholder="Tìm kiếm sản phẩm..."
               className="w-full min-w-0 border border-stone-300 rounded-l-xl px-3 py-2.5 text-sm outline-none focus:border-amber-800 focus:ring-1 focus:ring-amber-800 transition"
             />
@@ -202,17 +201,74 @@ export default function ProductList() {
           </form>
 
           <div className="flex gap-2">
-            <select
-              value={params.get("sort") || "newest"}
-              onChange={(e) => update({ sort: e.target.value })}
-              className="flex-1 sm:flex-none min-w-0 border border-stone-300 rounded-xl px-3 py-2.5 text-sm outline-none bg-white focus:border-amber-800"
+            <Select.Root
+              value={selectedSort}
+              onValueChange={(e) => update({ sort: e.value })}
+              options={SORTS}
+              optionValue="value"
+              optionKey="value"
+              className="w-full sm:w-56"
             >
-              {SORTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+              <Select.Trigger
+                className="
+        flex items-center justify-between
+        w-full h-12 px-4
+        rounded-xl border border-stone-200
+        bg-white text-sm text-stone-700
+        shadow-sm cursor-pointer
+        hover:border-amber-800
+        focus-within:ring-2 focus-within:ring-amber-800/10
+        transition-all
+      "
+              >
+                <Select.Value>
+                  {SORTS.find((s) => s.value === selectedSort)?.label}
+                </Select.Value>
+
+                <Select.Indicator>
+                  <ChevronDown />
+                </Select.Indicator>
+              </Select.Trigger>
+
+              <Select.Portal>
+                <Select.Positioner>
+                  <Select.Popup className="mt-2 p-1.5 w-[var(--anchor-width)] rounded-xl border border-stone-100  bg-white shadow-xl overflow-hidden">
+                    <Select.List>
+                      {(instance) => {
+                        const options = instance.options || [];
+                        const listbox = instance.listbox;
+
+                        return options.map((option) => {
+                          const selected = listbox?.isSelected(option);
+
+                          return (
+                            <Select.Option
+                              key={option.value}
+                              uKey={option.value}
+                              className={`
+                        flex items-center justify-between
+                        px-3 py-2.5 rounded-lg
+                        text-sm cursor-pointer
+                        transition-colors
+                        ${
+                          selected
+                            ? "bg-amber-50 text-amber-900 font-medium"
+                            : "text-stone-600 hover:bg-stone-50"
+                        }
+                      `}
+                            >
+                              {option.label}
+
+                              {selected && <Check className="text-amber-800" />}
+                            </Select.Option>
+                          );
+                        });
+                      }}
+                    </Select.List>
+                  </Select.Popup>
+                </Select.Positioner>
+              </Select.Portal>
+            </Select.Root>
 
             <button
               type="button"
@@ -250,30 +306,37 @@ export default function ProductList() {
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         <aside
           className={`
-            w-full lg:w-64 lg:shrink-0
-            ${showFilters ? "block" : "hidden lg:block"}
-          `}
+    w-full min-w-0 lg:w-64 lg:flex-none
+    overflow-hidden
+    transition-all duration-500 ease-in-out
+    ${
+      showFilters
+        ? "max-h-[1200px] opacity-100 translate-y-0"
+        : "max-h-0 opacity-0 -translate-y-3 pointer-events-none"
+    }
+    lg:!max-h-none lg:!opacity-100 lg:!translate-y-0 lg:!pointer-events-auto
+  `}
         >
           <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 space-y-6 shadow-sm lg:shadow-none">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm text-stone-800">
+                <h5 className="font-semibold text-sm text-stone-800">
                   DANH MỤC
-                </h3>
+                </h5>
                 <i className="pi pi-list text-amber-900" />
               </div>
 
-              <ul className="space-y-3 max-h-52 overflow-y-auto pr-2 custom-scrollbar">
+              <ul className="space-y-3 max-h-52 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
                 {categories.map((c) => (
                   <li key={c.id}>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm text-stone-600 hover:text-amber-900 transition-colors">
+                    <label className="flex items-start gap-2 cursor-pointer text-sm text-stone-600  hover:text-amber-900 transition-colors">
                       <input
                         type="checkbox"
                         checked={selectedCats.includes(String(c.id))}
                         onChange={() =>
                           toggle("category_id", selectedCats, c.id)
                         }
-                        className="accent-amber-900 w-4 h-4 shrink-0 cursor-pointer"
+                        className="accent-amber-900  w-4 h-4  shrink-0  mt-0.5 cursor-pointer"
                       />
 
                       <span className="flex-1 min-w-0 break-words ml-2">
@@ -295,9 +358,9 @@ export default function ProductList() {
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm text-stone-800">
+                <h5 className="font-semibold text-sm text-stone-800">
                   THƯƠNG HIỆU
-                </h3>
+                </h5>
                 <i className="pi pi-tag text-amber-900" />
               </div>
 
@@ -327,9 +390,9 @@ export default function ProductList() {
 
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-sm text-stone-800">
+                <h5 className="font-semibold text-sm text-stone-800">
                   KHOẢNG GIÁ
-                </h3>
+                </h5>
                 <i className="pi pi-wallet text-amber-900" />
               </div>
 
@@ -445,7 +508,7 @@ export default function ProductList() {
           ) : (
             <div
               className={`
-                grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3
+                grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4
                 gap-3 sm:gap-4 lg:gap-6
                 transition-opacity duration-300 
                 ${loading ? "opacity-50" : ""}

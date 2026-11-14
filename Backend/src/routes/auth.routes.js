@@ -13,6 +13,7 @@ const loginLimiter = limiter(
 const forgotLimiter = limiter(5, "Yêu cầu quá nhiều lần, vui lòng thử lại sau");
 const resetLimiter = limiter(10, "Thử quá nhiều lần, vui lòng thử lại sau");
 
+
 router.post("/register", auth.register);
 router.post("/login", loginLimiter, auth.login);
 router.post("/refresh", auth.refresh);

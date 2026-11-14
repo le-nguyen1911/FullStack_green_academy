@@ -204,7 +204,7 @@ export default function ProductDetail() {
       </div>
       <ProductDetailTabs
         description={p?.description || ""}
-        // reviews={reviews || []}
+        productId={id}
       />
       <RelatedProducts/>
     </div>

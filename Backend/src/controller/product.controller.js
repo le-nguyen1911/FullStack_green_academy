@@ -1,6 +1,7 @@
 const productService = require("../services/product.service");
 const brandModel = require("../models/brand.model");
 const categoryModel = require("../models/category.model");
+const productModel = require("../models/product.model");
 
 exports.listPublic = async (req, res) =>
   res.json(await productService.listPublic(req.query));
@@ -54,5 +55,29 @@ exports.adjustStock = async (req, res) =>
   res.json(
     await productService.adjustStock(req.params.variantId, req.body.delta),
   );
+
 exports.getRelated = async (req, res) =>
   res.json(await productService.getRelated(req.params.id));
+
+exports.getAllProducts = async (req, res) => {
+  try {
+    const products = await productModel.getAll();
+    res.json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.getProductById = async (req, res) => {
+  try {
+    const product = await productModel.getById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    }
+    res.json(product);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

@@ -5,7 +5,6 @@ import "primeicons/primeicons.css";
 import { PrimeReactProvider } from "@primereact/core";
 import Aura from "@primeuix/themes/aura";
 import Login from "./pages/Login.jsx";
-import Home from "./pages/Home.jsx";
 import Register from "./pages/Register.jsx";
 import AccountLayout from "./layouts/accountlayout/AccountLayout.jsx";
 import Profile from "./pages/Account/Profile.jsx";
@@ -15,6 +14,8 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ProductList from "./pages/ProductList.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
+import Homepage from "./pages/homepage/Homepage.jsx";
+import Introduce from "./pages/Introduce/introduce.jsx";
 
 const primereact = {
   license: import.meta.env.VITE_PRIMEUI_LICENSE,
@@ -32,7 +33,8 @@ const App = () => {
     <PrimeReactProvider {...primereact}>
       <Routes>
         <Route element={<LayoutMain />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Homepage />} />
+          <Route path="introduce" element={<Introduce />} />
           <Route path="account" element={<AccountLayout />}>
             <Route index element={<Profile />} />
             <Route path="orders" element={<Order />} />

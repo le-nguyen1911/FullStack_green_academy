@@ -1,364 +1,417 @@
-import React, { useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import "primeicons/primeicons.css";
+import styles from "../main/LayoutMain.module.css";
+import { BreadCrumb } from 'primereact/breadcrumb';
+import { useBreadcrumb } from "../../hooks/UserContext.jsx";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFacebookF, faInstagram, faYoutube } from '@fortawesome/free-brands-svg-icons';
+import { Carousel } from "primereact/carousel";
+import logoImg from "../../assets/logo.png";
+import brand1 from "../../assets/logobranchs/brand1.png";
+import brand2 from "../../assets/logobranchs/brand2.png";
+import brand3 from "../../assets/logobranchs/brand3.png";
+import brand4 from "../../assets/logobranchs/brand4.png";
+import brand5 from "../../assets/logobranchs/brand5.png";
+import brand6 from "../../assets/logobranchs/brand6.png";
+import brand7 from "../../assets/logobranchs/brand7.png";
+import brand8 from "../../assets/logobranchs/brand8.png";
+import brand9 from "../../assets/logobranchs/brand9.png";
 
-import logo from "../../assets/logo.png";
-import Breadcrumb from "../../components/Breadcrumb/Breadcrumb";
-import styles from "./LayoutMain.module.css";
 
-const heroTitleMap = {
-  "/cart": "GIỎ HÀNG",
-  "/wishlist": "YÊU THÍCH",
-  "/about": "GIỚI THIỆU",
-  "/products": "SẢN PHẨM",
-  "/new": "TIN TỨC",
-  "/contact": "LIÊN HỆ",
-};
-
-const navLinks = [
-  { to: "/about", label: "GIỚI THIỆU" },
-  { to: "/products", label: "SẢN PHẨM" },
-  { to: "/new", label: "TIN TỨC" },
-  { to: "/contact", label: "LIÊN HỆ" },
-];
 
 const LayoutMain = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const [carts] = useState([]);
+  const [showMenu, setShowMenu] = useState(true);
+  const lastScroll = useRef(0);
+  const [transparent, setTransparent] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [keyword, setKeyword] = useState("");
-
-  const hideHero =
-    location.pathname === "/" ||
-    location.pathname === "/login" ||
-    location.pathname.startsWith("/account");
-
-  const heroTitle = heroTitleMap[location.pathname] || "";
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
+  const { breadcrumbs = [], setBreadcrumbs } = useBreadcrumb();
 
-    const search = keyword.trim();
+  const isTransparentHeader = isHomePage && transparent;
+  const textColor = isTransparentHeader ? "#fff" : "#000";
 
-    if (!search) return;
+  const items = (breadcrumbs || []).map((item) => ({
+    label: item.label,
+    template: () => (
+      <Link to={item.url || "#"} className="p-menuitem-link">
+        <span className="p-menuitem-text">{item.label}</span>
+      </Link>
+    )
+  }));
 
-    navigate(`/products?q=${encodeURIComponent(search)}`);
-
-    closeMenu();
+  const home = {
+    template: () => (
+      <Link to="/" className="p-menuitem-link">
+        <span className="pi pi-home"></span>
+      </Link>
+    )
   };
+
+  const brandImages = [
+    { id: 1, image: brand1 },
+    { id: 2, image: brand2 },
+    { id: 3, image: brand3 },
+    { id: 4, image: brand4 },
+    { id: 5, image: brand5 },
+    { id: 6, image: brand6 },
+    { id: 6, image: brand7 },
+    { id: 6, image: brand8 },
+    { id: 6, image: brand9 },
+  ];
+
+  const brandResponsiveOptions = [
+    { breakpoint: "1200px", numVisible: 5, numScroll: 1 },
+    { breakpoint: "992px", numVisible: 4, numScroll: 1 },
+    { breakpoint: "768px", numVisible: 2, numScroll: 1 },
+  ];
+
+  const brandTemplate = (brand) => {
+    return (
+      <div className="d-flex align-items-center justify-content-center px-4 py-3">
+        <img
+          src={brand.image}
+          alt="Brand Logo"
+          style={{
+            maxHeight: "45px",
+            width: "auto",
+            objectFit: "contain",
+            userSelect: "none",
+            pointerEvents: "none",
+            filter: "brightness(0)"
+          }}
+        />
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScroll = window.scrollY;
+      setTransparent(currentScroll < 600);
+      setShowMenu(currentScroll <= lastScroll.current || currentScroll <= 100);
+      lastScroll.current = currentScroll;
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <>
-      <nav className="w-full border-b border-gray-200 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="hidden lg:grid lg:grid-cols-3 lg:items-center lg:py-4">
-            <ul className="flex items-center gap-5 xl:gap-7 text-black">
-              {navLinks.map((item) => (
-                <li key={item.to}>
-                  <Link
-                    to={item.to}
-                    className="whitespace-nowrap text-sm font-bold text-gray-800! transition-colors hover:text-[#6f4e37]! no-underline!"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link to="/" className="flex justify-center">
-              <img
-                src={logo}
-                alt="Logo"
-                className="h-auto w-[150px] xl:w-[170px]"
-              />
-            </Link>
-            <div className="flex items-center justify-end gap-5">
-              <form
-                onSubmit={handleSearch}
-                className="flex justify-between min-w-0 items-center border border-gray-300 px-3 py-2 rounded-3xl w-[250px]"
-              >
-                <input
-                  type="text"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Tìm kiếm sản phẩm..."
-                  className="w-full min-w-0 border-0 bg-transparent text-sm outline-none"
-                />
+      <header
+        className={`${styles.header} ${showMenu ? styles.show : styles.hide}`}
+        style={{
+          backgroundColor: isTransparentHeader ? "transparent" : "#fff",
+          transition: "all .3s ease",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 1000,
+          boxShadow: isTransparentHeader ? "none" : "0 2px 4px rgba(0,0,0,0.05)"
+        }}
+      >
+        <nav
+          className="container-fluid py-3"
+          style={{
+            backgroundColor: isTransparentHeader ? "transparent" : "#fff",
+            borderBottom: isTransparentHeader ? "none" : "1px solid #dee2e6",
+            transition: "all .3s ease",
+          }}
+        >
+          <div className="container">
+            {/* Desktop Menu */}
+            <div className="row align-items-center d-none d-lg-flex">
+              <div className="col-4">
+                <ul className="nav gap-4 fw-semibold">
+                  {["introduce", "products", "news", "contact"].map((path, idx) => {
+                    const labels = ["GIỚI THIỆU", "SẢN PHẨM", "TIN TỨC", "LIÊN HỆ"];
+                    return (
+                      <li key={path}>
+                        <Link to={`/${path}`} className="nav-link p-0" style={{ color: textColor }}>
+                          {labels[idx]}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
 
-                <button type="submit" aria-label="Tìm kiếm sản phẩm">
-                  <i className="pi pi-search text-[#6f4e37]! text-xl!" />
-                </button>
-              </form>
-              <Link
-                to="/wishlist"
-                className="text-gray-800! transition-colors hover:text-[#6f4e37]!"
+              {/* Logo */}
+              <div className="col-4 text-center">
+                <Link to="/">
+                  <img
+                    src={logoImg}
+                    className="img-fluid"
+                    style={{
+                      width: "170px",
+                      filter: isTransparentHeader ? "brightness(0) invert(1)" : "none",
+                      transition: "filter 0.3s ease",
+                    }}
+                    alt="Logo"
+                  />
+                </Link>
+              </div>
+
+              {/* Right Actions */}
+              <div className="col-4">
+                <div className="d-flex justify-content-end align-items-center gap-4">
+                  <div className="d-flex align-items-center" style={{ borderBottom: `1px solid ${textColor}` }}>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm"
+                      className="border-0 shadow-none"
+                      style={{ background: "transparent", color: textColor, outline: "none" }}
+                    />
+                    <i className="pi pi-search ms-2" style={{ color: textColor }}></i>
+                  </div>
+
+                  <Link to="/wishlist" style={{ color: textColor }}><i className="pi pi-heart fs-5"></i></Link>
+                  <Link to="/account" style={{ color: textColor }}><i className="pi pi-user fs-5"></i></Link>
+
+                  <span className="position-relative" style={{ color: textColor }}>
+                    <i className="pi pi-shopping-cart fs-5"></i>
+                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
+                      0
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Header Top */}
+            <div className="d-flex d-lg-none align-items-center justify-content-between py-1">
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(!menuOpen); setSearchOpen(false); }}
+                className="btn border-0 d-flex h-10 w-10 align-items-center justify-content-center rounded p-0"
+                style={{ color: textColor }}
               >
-                <i className="pi pi-heart text-xl!" />
+                <i className={`pi ${menuOpen ? "pi-times" : "pi-bars"} fs-4`} />
+              </button>
+
+              <Link to="/" onClick={() => { closeMenu(); setSearchOpen(false); }}>
+                <img
+                  src={logoImg}
+                  className="img-fluid"
+                  style={{
+                    width: "130px",
+                    filter: isTransparentHeader ? "brightness(0) invert(1)" : "none",
+                    transition: "filter 0.3s ease",
+                  }}
+                  alt="Logo"
+                />
               </Link>
-              <Link
-                to="/account"
-                className="text-gray-800! transition-colors hover:text-[#6f4e37]"
-              >
-                <i className="pi pi-user text-xl!" />
-              </Link>
+
               <Link
                 to="/cart"
-                className="relative text-gray-800! transition-colors hover:text-[#6f4e37] no-underline!"
+                className="position-relative text-decoration-none d-flex align-items-center justify-content-center"
+                style={{ width: "40px", height: "40px", color: textColor }}
               >
-                <i className="pi pi-shopping-cart text-xl! " />
-
-                <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6f4e37] px-1 text-xs text-white">
-                  {carts.length}
+                <i className="pi pi-shopping-cart fs-5" />
+                <span className="position-absolute top-25 start-75 translate-middle badge rounded-pill bg-warning text-dark" style={{ fontSize: '10px' }}>
+                  0
                 </span>
               </Link>
             </div>
-          </div>
-          <div className="flex items-center justify-between py-3 lg:hidden">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle navigation"
-              aria-expanded={menuOpen}
-              className="flex h-10 w-10 items-center justify-center rounded-md text-gray-800 hover:bg-gray-100"
-            >
-              <i
-                className={`pi ${menuOpen ? "pi-times" : "pi-bars"} text-xl`}
-              />
-            </button>
-            <Link to="/" onClick={closeMenu}>
-              <img
-                src={logo}
-                alt="Logo"
-                className="h-auto w-[130px] sm:w-[150px]"
-              />
-            </Link>
-            <Link
-              to="/cart"
-              className="relative flex h-10 w-10 items-center justify-center text-gray-800! no-underline!"
-            >
-              <i className="pi pi-shopping-cart text-xl" />
 
-              <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6f4e37] px-1 text-xs text-white">
-                {carts.length}
-              </span>
-            </Link>
-          </div>
-          <div
-            className={`grid transition-all duration-300 lg:hidden ${
-              menuOpen
-                ? "grid-rows-[1fr] opacity-100"
-                : "grid-rows-[0fr] opacity-0"
-            }`}
-          >
-            <div className="overflow-hidden">
-              <div className="border-t border-gray-100 py-3">
-                <ul className="flex flex-col">
-                  {navLinks.map((item) => (
+            {/* Mobile Dropdown Menu */}
+            {menuOpen && (
+              <div className="d-lg-none border-top mt-2 pt-3 pb-2 bg-white shadow-sm rounded px-2">
+                <ul className="nav flex-column gap-2 fw-semibold">
+                  {[
+                    { to: "/gioi-thieu", label: "GIỚI THIỆU" },
+                    { to: "/san-pham", label: "SẢN PHẨM" },
+                    { to: "/tin-tuc", label: "TIN TỨC" },
+                    { to: "/lien-he", label: "LIÊN HỆ" }
+                  ].map((item, index, arr) => (
                     <li key={item.to}>
                       <Link
                         to={item.to}
                         onClick={closeMenu}
-                        className="block border-b border-gray-100 px-3 py-3 text-sm font-semibold text-gray-800! hover:bg-gray-50 hover:text-[#6f4e37] no-underline! "
+                        className={`nav-link text-dark py-2 ${index !== arr.length - 1 ? 'border-bottom' : ''}`}
                       >
                         {item.label}
                       </Link>
                     </li>
                   ))}
                 </ul>
-                <form
-                  onSubmit={handleSearch}
-                  className="mt-4 flex items-center gap-2 px-3"
-                >
-                  <div className="flex flex-1 min-w-0 items-center rounded-md border border-gray-300 px-3 py-2">
-                    <input
-                      type="text"
-                      value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
-                      placeholder="Tìm kiếm sản phẩm..."
-                      className="w-full min-w-0 bg-transparent text-sm outline-none"
-                    />
-
-                    <button type="submit" aria-label="Tìm kiếm sản phẩm">
-                      <i className="pi pi-search text-gray-500" />
-                    </button>
-                  </div>
-                </form>
-                <div className="mt-4 flex items-center gap-6 px-3">
-                  <Link
-                    to="/wishlist"
-                    onClick={closeMenu}
-                    className="text-gray-800! hover:text-[#6f4e37]"
-                  >
-                    <i className="pi pi-heart text-xl" />
-                  </Link>
-
-                  <Link
-                    to="/account"
-                    onClick={closeMenu}
-                    className="text-gray-800! hover:text-[#6f4e37]"
-                  >
-                    <i className="pi pi-user text-xl" />
-                  </Link>
-                </div>
               </div>
+            )}
+          </div>
+        </nav>
+
+        {/* POPUP TÌM KIẾM CHO MOBILE */}
+        {searchOpen && (
+          <div className="d-lg-none bg-white border-bottom shadow-sm p-3 position-relative animate__animated animate__fadeIn">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <span className="fw-bold fs-5 mx-auto">Tìm kiếm sản phẩm</span>
+              <button
+                onClick={() => setSearchOpen(false)}
+                className="btn btn-light border-0 p-2 rounded-circle"
+                style={{ width: "35px", height: "35px" }}
+              >
+                <i className="pi pi-times"></i>
+              </button>
+            </div>
+
+            <div className="input-group border rounded px-2 py-1 mb-2 bg-light align-items-center">
+              <input
+                type="text"
+                placeholder="Nhập tìm kiếm..."
+                className="form-control border-0 shadow-none bg-transparent"
+              />
+              <i className="pi pi-search text-muted me-2"></i>
+            </div>
+
+            <div className="d-flex align-items-center gap-2 text-muted" style={{ fontSize: '14px' }}>
+              <span className="text-dark fw-semibold">Sản phẩm bán chạy</span>
+              <Link to="/san-pham" onClick={() => setSearchOpen(false)} className="text-decoration-underline text-primary">Cà phê</Link>
+              <Link to="/san-pham" onClick={() => setSearchOpen(false)} className="text-decoration-underline text-primary">Nguyên chất</Link>
+              <Link to="/san-pham" onClick={() => setSearchOpen(false)} className="text-decoration-underline text-primary">Rang xay</Link>
             </div>
           </div>
-        </div>
-      </nav>
-      {!hideHero && (
-        <div className={styles.hero}>
-          <div className="container mx-auto px-4">
-            {heroTitle && (
-              <h1 className="text-center text-2xl font-bold sm:text-3xl lg:text-4xl">
-                {heroTitle}
-              </h1>
-            )}
+        )}
+      </header>
 
-            <div className="mt-2 text-center text-sm sm:text-base">
-              <Breadcrumb />
-            </div>
+      {!isHomePage && <main style={{ height: "90px" }} />}
+
+      {!isHomePage && (
+        <div className="breadcrumb-container d-block d-lg-none" style={{ margin: '10px 0' }}>
+          <div className="container">
+            <BreadCrumb model={items} home={home} />
           </div>
         </div>
       )}
-      <main className="min-h-[50vh] w-full">
-        <Outlet />
-      </main>
-      <footer className="bg-[#f8f8f8]">
-        <div className="container mx-auto px-4 py-10 lg:py-14">
-          <div className="grid grid-cols-1 gap-8 border-b border-gray-300 pb-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
-            <div className="sm:col-span-2 lg:col-span-1">
-              <img
-                src={logo}
-                alt="Logo"
-                className="mb-4 h-auto w-[160px] sm:w-[180px]"
-              />
 
-              <p className="text-sm leading-7 text-gray-600">
-                Cà phê nguyên chất được chế biến 100% nguyên chất, không pha
-                trộn với bất kỳ loại hạt cà phê nào khác.
+      <Outlet context={{ setBreadcrumbs }} />
+
+      <footer className='text-white position-relative w-100' style={{
+        background: "linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url('https://chapelyard.co.uk/wp-content/uploads/2025/02/cafe-dereham.png') center/cover no-repeat",
+        margin: 0,
+        paddingBottom: '20px'
+      }}>
+
+        <div
+          className="py-4 border-bottom border-secondary border-opacity-25"
+          style={{ backgroundColor: "#e9e3dc" }}
+        >
+          <div className="container">
+            <Carousel
+              value={brandImages}
+              itemTemplate={brandTemplate}
+              numVisible={5}
+              numScroll={1}
+              circular={true}
+              autoplayInterval={3000}
+              responsiveOptions={brandResponsiveOptions}
+              showIndicators={false}
+              showNavigators={false}
+              touchable={true}
+            />
+          </div>
+        </div>
+
+        <div className="footer pt-5 pb-3 container">
+          <div className="footer-content row d-flex justify-content-between align-items-start border-bottom pb-4">
+
+            <div className="footer-col about col-lg-3 col-md-12 mb-4 mb-lg-0 text-center text-lg-start">
+              <img src={logoImg} className="logo mb-3" style={{ width: "160px", height: "auto", filter: "brightness(0) invert(1)" }} alt="Footer Logo" />
+              <p className="mt-2 text-light opacity-75" style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                Cà phê nguyên chất được chế biến 100% nguyên chất, không pha trộn với bất kỳ loại hạt cà phê nào khác.
               </p>
             </div>
 
-            <div>
-              <h3 className="mb-4 text-base font-bold text-gray-900">
-                DANH MỤC
-              </h3>
-
-              <ul className="space-y-3 text-sm text-gray-600">
-                <li>
-                  <Link to="/" className="hover:text-[#6f4e37]">
-                    Trang chủ
-                  </Link>
-                </li>
-
-                <li>
-                  <Link to="/about" className="hover:text-[#6f4e37]">
-                    Giới thiệu
-                  </Link>
-                </li>
-
-                <li>
-                  <Link to="/products" className="hover:text-[#6f4e37]">
-                    Sản phẩm
-                  </Link>
-                </li>
-
-                <li>
-                  <Link to="/new" className="hover:text-[#6f4e37]">
-                    Tin tức
-                  </Link>
-                </li>
-
-                <li>
-                  <Link to="/contact" className="hover:text-[#6f4e37]">
-                    Liên hệ
-                  </Link>
-                </li>
+            <div className="footer-col col-lg-2 col-md-4 col-6 mb-4 mb-lg-0">
+              <h3 style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '0.8px', marginBottom: '16px' }}>DANH MỤC</h3>
+              <ul className="list-unstyled opacity-75" style={{ fontSize: '14px', lineHeight: '2' }}>
+                {["Trang chủ", "Giới thiệu", "Sản phẩm", "Tin tức", "Liên hệ"].map(i => <li key={i}>{i}</li>)}
               </ul>
             </div>
 
-            <div>
-              <h3 className="mb-4 text-base font-bold text-gray-900">HỖ TRỢ</h3>
-
-              <ul className="space-y-3 text-sm text-gray-600">
-                <li>Câu hỏi thường gặp</li>
-                <li>Dịch vụ khách hàng</li>
-                <li>Vị trí cửa hàng</li>
-                <li>Sản phẩm bán chạy</li>
-                <li>Manufactures</li>
+            <div className="footer-col col-lg-2 col-md-4 col-6 mb-4 mb-lg-0">
+              <h3 style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '0.8px', marginBottom: '16px' }}>HỖ TRỢ</h3>
+              <ul className="list-unstyled opacity-75" style={{ fontSize: '14px', lineHeight: '2' }}>
+                {["Câu hỏi thường gặp", "Dịch vụ khách hàng", "Vị trí cửa hàng", "Sản phẩm bán chạy", "Manufactures"].map(i => <li key={i}>{i}</li>)}
               </ul>
             </div>
-            <div>
-              <h3 className="mb-4 text-base font-bold text-gray-900">
-                CHÍNH SÁCH
-              </h3>
 
-              <ul className="space-y-3 text-sm text-gray-600">
-                <li>Chính sách bảo mật</li>
-                <li>Chính sách giao hàng</li>
-                <li>Chính sách đổi trả</li>
-                <li>Chính sách bảo hành</li>
-                <li>Điều khoản & điều kiện</li>
+            <div className="footer-col col-lg-2 col-md-4 col-12 mb-4 mb-lg-0">
+              <h3 style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '0.8px', marginBottom: '16px' }}>CHÍNH SÁCH</h3>
+              <ul className="list-unstyled opacity-75" style={{ fontSize: '14px', lineHeight: '2' }}>
+                {["Chính sách bảo mật", "Chính sách giao hàng", "Chính sách đổi trả", "Chính sách bảo hành", "Điều khoản & điều kiện"].map(i => <li key={i}>{i}</li>)}
               </ul>
             </div>
-            <div className="sm:col-span-2 lg:col-span-1">
-              <h3 className="mb-4 text-base font-bold text-gray-900">
-                ĐĂNG KÝ NHẬN TIN TỨC
-              </h3>
 
-              <p className="mb-4 text-sm leading-6 text-gray-600">
-                Đăng ký ngay để nhận các tin tức khuyến mãi mới nhất.
-              </p>
-
-              <div className="flex w-full overflow-hidden rounded-md border border-gray-300 bg-white">
-                <input
-                  type="email"
-                  placeholder="Nhập email"
-                  className="min-w-0 flex-1 px-3 py-3 text-sm outline-none"
-                />
-
-                <button
-                  type="button"
-                  className="shrink-0 bg-[#6f4e37] px-3 text-xs font-semibold text-white transition hover:bg-[#513824] sm:px-4"
-                >
-                  ĐĂNG KÝ
-                </button>
+            {/* Cột Đăng ký nhận tin */}
+            <div className="footer-col subscribe col-lg-3 col-md-12 mb-4 mb-lg-0 text-center text-lg-start">
+              <h3 style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '0.8px', marginBottom: '16px' }}>ĐĂNG KÝ NHẬN TIN TỨC</h3>
+              <p className="opacity-75" style={{ fontSize: '14px', lineHeight: '1.5' }}>Đăng ký ngay để nhận các tin tức khuyến mãi mới nhất.</p>
+              <div className="newsletter input-group mb-3">
+                <input type="email" className="form-control" placeholder="Nhập email" style={{ fontSize: '14px' }} />
+                <button className="btn btn-dark" style={{ fontSize: '14px' }}>ĐĂNG KÝ</button>
               </div>
-              <div className="mt-5 flex items-center gap-5 text-gray-600">
-                <a
-                  href="#"
-                  aria-label="Facebook"
-                  className="hover:text-[#6f4e37]"
-                >
-                  <i className="fab fa-facebook-f text-lg" />
+              <div className="social d-flex gap-3 justify-content-center justify-content-lg-start mt-3">
+                <a href="#" className="text-white text-decoration-none bg-dark border border-secondary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px' }}>
+                  <FontAwesomeIcon icon={faFacebookF} />
                 </a>
-
-                <a
-                  href="#"
-                  aria-label="Instagram"
-                  className="hover:text-[#6f4e37]"
-                >
-                  <i className="fab fa-instagram text-lg" />
+                <a href="#" className="text-white text-decoration-none bg-dark border border-secondary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px' }}>
+                  <FontAwesomeIcon icon={faInstagram} />
                 </a>
-
-                <a
-                  href="#"
-                  aria-label="Youtube"
-                  className="hover:text-[#6f4e37]"
-                >
-                  <i className="fab fa-youtube text-lg" />
+                <a href="#" className="text-white text-decoration-none bg-dark border border-secondary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px' }}>
+                  <FontAwesomeIcon icon={faYoutube} />
                 </a>
               </div>
             </div>
           </div>
 
-          <div className="pt-6 text-center text-xs text-gray-500 sm:text-sm">
-            © Thiết kế và lập trình bởi MONA.Media
+          <div className="copyright d-flex justify-content-center pt-3 text-light opacity-50" style={{ fontSize: '13px' }}>
+            © Đồ Án FullStack_green_academy
           </div>
         </div>
       </footer>
+
+      {/* Thanh điều hướng dưới cùng cho mobile */}
+      <div
+        className="d-block d-lg-none position-fixed bottom-0 start-0 w-100 bg-white border-top py-2 px-2 shadow"
+        style={{ zIndex: 1050 }}
+      >
+        <div className="row text-center m-0">
+          <div className="col p-0">
+            <Link to="/" onClick={() => setSearchOpen(false)} className="text-dark text-decoration-none d-flex flex-column align-items-center">
+              <i className="pi pi-home fs-5"></i>
+              <span style={{ fontSize: '11px' }} className="mt-1">Trang chủ</span>
+            </Link>
+          </div>
+          <div className="col p-0">
+            <button
+              onClick={() => { setSearchOpen(!searchOpen); setMenuOpen(false); }}
+              className="btn border-0 bg-transparent text-dark w-100 p-0 d-flex flex-column align-items-center"
+            >
+              <i className="pi pi-search fs-5"></i>
+              <span style={{ fontSize: '11px' }} className="mt-1">Tìm kiếm</span>
+            </button>
+          </div>
+          <div className="col p-0">
+            <Link to="/san-pham" onClick={() => setSearchOpen(false)} className="text-dark text-decoration-none d-flex flex-column align-items-center">
+              <i className="pi pi-shopping-bag fs-5"></i>
+              <span style={{ fontSize: '11px' }} className="mt-1">Sản phẩm</span>
+            </Link>
+          </div>
+          <div className="col p-0">
+            <Link to="/account" onClick={() => setSearchOpen(false)} className="text-dark text-decoration-none d-flex flex-column align-items-center">
+              <i className="pi pi-user fs-5"></i>
+              <span style={{ fontSize: '11px' }} className="mt-1">Tài khoản</span>
+            </Link>
+          </div>
+        </div>
+      </div>
     </>
   );
 };

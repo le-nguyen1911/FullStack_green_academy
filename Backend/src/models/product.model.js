@@ -1,5 +1,5 @@
 const { randomUUID } = require("crypto");
-const db = require("../config/database");
+const db = require("../config/database"); // Hoặc tùy theo đường dẫn config db của bạn
 
 const PRODUCT_UPDATABLE = [
   "category_id",
@@ -253,6 +253,7 @@ const adjustStock = async (variantId, delta, conn = db) => {
   );
   return r.affectedRows;
 };
+
 const getImages = async (id) => {
   const [rows] = await db.query(
     "SELECT image_url, images FROM products WHERE id = ?",
@@ -260,6 +261,7 @@ const getImages = async (id) => {
   );
   return rows[0] || null;
 };
+
 const findRelated = async (id, limit = 8) => {
   const [rows] = await db.query(
     `SELECT p.id, p.name, p.image_url, p.created_at, p.category_id, p.brand_id,
@@ -282,6 +284,29 @@ const findRelated = async (id, limit = 8) => {
   );
   return rows;
 };
+
+const getAll = async () => {
+  const [rows] = await db.query(`
+        SELECT p.*, c.name AS category_name
+        FROM products p LEFT JOIN categories c ON p.category_id = c.id
+        ORDER BY p.id ASC    
+    `);
+  return rows;
+};
+
+const getById = async id => {
+  const [rows] = await db.query(
+    `
+        SELECT p.*, c.name AS category_name
+        FROM products p LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ?    
+    `,
+    [id]
+  );
+  return rows[0];
+};
+
+
 module.exports = {
   list,
   findDetail,
@@ -296,4 +321,6 @@ module.exports = {
   adjustStock,
   getImages,
   findRelated,
+  getAll,
+  getById,
 };

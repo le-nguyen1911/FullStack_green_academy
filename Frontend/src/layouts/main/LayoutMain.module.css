@@ -1,11 +1,49 @@
-.hero {
-    background-image: url("https://cafengon.monamedia.net/wp-content/uploads/2023/04/bread-bg.png");
-    background-position: center;
-    background-repeat: repeat;
+.heroAccount {
+    height: 280px;
+
+    display: flex;
+    align-items: center;
+
     background-size: cover;
-    padding: 40px 0;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    position: relative;
 }
 
-.hero h1 {
-    margin-bottom: 0;
+.heroAccount::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
+.heroAccount .container {
+    position: relative;
+    z-index: 2;
+}
+
+.heroTitle {
+    font-size: 60px;
+    font-weight: 500;
+    color: #1b0a02;
+    margin-bottom: 15px;
+}
+
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    transition: transform .3s ease;
+}
+
+
+.show {
+    transform: translateY(0);
+}
+
+
+.hide {
+    transform: translateY(-100%);
 }

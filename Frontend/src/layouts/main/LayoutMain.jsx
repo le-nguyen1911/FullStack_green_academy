@@ -331,10 +331,21 @@ const LayoutMain = () => {
             <div className="footer-col col-lg-2 col-md-4 col-6 mb-4 mb-lg-0">
               <h3 style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '0.8px', marginBottom: '16px' }}>DANH MỤC</h3>
               <ul className="list-unstyled opacity-75" style={{ fontSize: '14px', lineHeight: '2' }}>
-                {["Trang chủ", "Giới thiệu", "Sản phẩm", "Tin tức", "Liên hệ"].map(i => <li key={i}>{i}</li>)}
+                {[
+                  { label: "Trang chủ", path: "/" },
+                  { label: "Giới thiệu", path: "/introduce" },
+                  { label: "Sản phẩm", path: "/products" },
+                  { label: "Tin tức", path: "/news" },
+                  { label: "Liên hệ", path: "/contact" }
+                ].map((item) => (
+                  <li key={item.path}>
+                    <Link to={item.path} className="text-white text-decoration-none">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
-
             <div className="footer-col col-lg-2 col-md-4 col-6 mb-4 mb-lg-0">
               <h3 style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '0.8px', marginBottom: '16px' }}>HỖ TRỢ</h3>
               <ul className="list-unstyled opacity-75" style={{ fontSize: '14px', lineHeight: '2' }}>

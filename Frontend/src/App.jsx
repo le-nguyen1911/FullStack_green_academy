@@ -1,23 +1,31 @@
 import { Route, Routes } from "react-router-dom";
 import axios from "axios";
+
 import LayoutMain from "./layouts/main/LayoutMain.jsx";
-import "primeicons/primeicons.css";
+import AccountLayout from "./layouts/accountlayout/AccountLayout.jsx";
+
 import { PrimeReactProvider } from "@primereact/core";
 import Aura from "@primeuix/themes/aura";
+import "primeicons/primeicons.css";
+
 import Login from "./pages/Login.jsx";
-import Home from "./pages/Home.jsx";
 import Register from "./pages/Register.jsx";
-import AccountLayout from "./layouts/accountlayout/AccountLayout.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
+
 import Profile from "./pages/Account/Profile.jsx";
 import InformationPesonal from "./pages/Account/InformationPesonal.jsx";
 import Order from "./pages/Account/Order.jsx";
-import ForgotPassword from "./pages/ForgotPassword.jsx";
-import ResetPassword from "./pages/ResetPassword.jsx";
+import ChangePassword from "./pages/Account/ChangePassword.jsx";
+
 import ProductList from "./pages/ProductList.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
-import ChangePassword from "./pages/Account/ChangePassword.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
 import Cart from "./pages/Cart.jsx";
+import Homepage from "./pages/homepage/Homepage.jsx";
+import Introduce from "./pages/Introduce/introduce.jsx";
+
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 const primereact = {
   license: import.meta.env.VITE_PRIMEUI_LICENSE,
@@ -28,6 +36,7 @@ const primereact = {
     },
   },
 };
+
 axios.defaults.baseURL = "http://localhost:3000/api";
 
 const App = () => {
@@ -35,18 +44,22 @@ const App = () => {
     <PrimeReactProvider {...primereact}>
       <Routes>
         <Route element={<LayoutMain />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Homepage />} />
+          <Route path="introduce" element={<Introduce />} />
+          <Route path="products" element={<ProductList />} />
+          <Route path="products/:id" element={<ProductDetail />} />
+
+          {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
+            <Route path="cart" element={<Cart />} />
+
             <Route path="account" element={<AccountLayout />}>
               <Route index element={<Profile />} />
               <Route path="orders" element={<Order />} />
               <Route path="profile" element={<InformationPesonal />} />
               <Route path="change-password" element={<ChangePassword />} />
             </Route>
-            <Route path="/cart" element={<Cart />} />
           </Route>
-          <Route path="products" element={<ProductList />} />
-          <Route path="products/:id" element={<ProductDetail />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

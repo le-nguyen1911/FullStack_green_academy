@@ -6,7 +6,7 @@ const breadcrumbMap = {
   "/cart": "Giỏ hàng",
   "/wishlist": "Yêu thích",
   "/about": "Giới thiệu",
-  "/product": "Sản phẩm",
+  "/products": "Sản phẩm",
   "/news": "Tin tức",
   "/contact": "Liên hệ",
   "/checkout": "Thanh toán",

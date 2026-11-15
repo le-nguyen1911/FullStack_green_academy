@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import logo from "../../assets/logo.png";
 import Breadcrumb from "../../components/Breadcrumb/Breadcrumb";
 import styles from "./LayoutMain.module.css";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCart } from "../../redux/slices/cartSlice";
+import { useAuth } from "@/hooks/useAuth";
 
 const heroTitleMap = {
   "/cart": "GIỎ HÀNG",
@@ -22,12 +25,14 @@ const navLinks = [
 ];
 
 const LayoutMain = () => {
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-
+  const totalQuantity = useSelector((state) => state.cart.totalQuantity);
   const [carts] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
+  const dispatch = useDispatch();
 
   const hideHero =
     location.pathname === "/" ||
@@ -49,7 +54,11 @@ const LayoutMain = () => {
 
     closeMenu();
   };
-
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchCart());
+    }
+  }, [user, dispatch]);
   return (
     <>
       <nav className="w-full border-b border-gray-200 bg-white">
@@ -105,12 +114,13 @@ const LayoutMain = () => {
               </Link>
               <Link
                 to="/cart"
-                className="relative text-gray-800! transition-colors hover:text-[#6f4e37] no-underline!"
+                className="relative text-gray-800! transition-colors hover:text-[#6f4e37] no-underline! "
+                id="header-cart"
               >
                 <i className="pi pi-shopping-cart text-xl! " />
 
                 <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6f4e37] px-1 text-xs text-white">
-                  {carts.length}
+                  {totalQuantity > 99 ? "99+" : totalQuantity}
                 </span>
               </Link>
             </div>
@@ -141,7 +151,7 @@ const LayoutMain = () => {
               <i className="pi pi-shopping-cart text-xl" />
 
               <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6f4e37] px-1 text-xs text-white">
-                {carts.length}
+                {totalQuantity > 99 ? "99+" : totalQuantity}
               </span>
             </Link>
           </div>

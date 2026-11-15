@@ -12,6 +12,9 @@ import { toArray } from "../util/product";
 import Stars from "../components/Stars";
 import ProductDetailTabs from "../components/ProductDetailTabs";
 import RelatedProducts from "@/components/RelatedProducts";
+import { addToCart as addToCartThunk } from "../redux/slices/cartSlice";
+
+
 export default function ProductDetail() {
   const { id } = useParams();
   const dispatch = useDispatch();
@@ -62,11 +65,31 @@ export default function ProductDetail() {
   const max = selected ? Math.min(99, selected.quantity) : 0;
   const safeQty = Math.min(Math.max(qty, 1), Math.max(max, 1));
 
-  const addToCart = () => {
-    if (!user)
-      return navigate("/login", { state: { from: location.pathname } });
-    setNotice("Chức năng giỏ hàng sẽ được nối ở bước tiếp theo");
-  };
+const addToCart = async () => {
+  if (!user) {
+    return navigate("/login", {
+      state: { from: location.pathname },
+    });
+  }
+
+  if (!selected || max === 0) {
+    setNotice("Sản phẩm hiện đã hết hàng");
+    return;
+  }
+
+  try {
+    const result = await dispatch(
+      addToCartThunk({
+        variant_id: selected.id,
+        quantity: safeQty,
+      }),
+    ).unwrap();
+
+    setNotice("Đã thêm sản phẩm vào giỏ hàng!");
+  } catch (error) {
+    setNotice(error || "Không thể thêm sản phẩm vào giỏ hàng");
+  }
+};
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">

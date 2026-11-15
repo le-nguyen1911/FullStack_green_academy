@@ -282,6 +282,34 @@ const findRelated = async (id, limit = 8) => {
   );
   return rows;
 };
+const findVariantForSale = async (variantId, conn = db) => {
+  const [rows] = await conn.query(
+    `SELECT
+        v.id,
+        v.product_id,
+        v.variant_name,
+        v.price,
+        v.quantity AS stock,
+        v.status AS variant_status,
+        p.status AS product_status
+     FROM product_variants v
+     JOIN products p ON p.id = v.product_id
+     WHERE v.id = ?
+     LIMIT 1`,
+    [variantId],
+  );
+
+  if (!rows.length) return null;
+
+  const variant = rows[0];
+
+  return {
+    ...variant,
+    stock: Number(variant.stock),
+    sellable:
+      Boolean(variant.variant_status) && Boolean(variant.product_status),
+  };
+};
 module.exports = {
   list,
   findDetail,
@@ -296,4 +324,5 @@ module.exports = {
   adjustStock,
   getImages,
   findRelated,
+  findVariantForSale,
 };

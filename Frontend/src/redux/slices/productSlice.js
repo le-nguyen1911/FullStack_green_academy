@@ -5,7 +5,7 @@ export const fetchProducts = createAsyncThunk(
   "products/fetchList",
   async (params, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/products", { params });
+      const { data } = await api.get("/products/", { params });
       return data;
     } catch (e) {
       return rejectWithValue(getError(e, "Không tải được sản phẩm"));

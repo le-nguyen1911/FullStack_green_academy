@@ -7,6 +7,8 @@ import store from "./redux/store";
 import { restoreSession, forceLogout } from "./redux/slices/authSlice";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { PrimeReactProvider } from "primereact/api";
+import "./index.css";
+
 
 if (localStorage.getItem("hasSession")) store.dispatch(restoreSession());
 window.addEventListener("auth:logout", () => store.dispatch(forceLogout()));

@@ -1,12 +1,12 @@
 import { Route, Routes } from "react-router-dom";
 import axios from "axios";
 
-import LayoutMain from "./layouts/main/LayoutMain.jsx";
-import AccountLayout from "./layouts/accountlayout/AccountLayout.jsx";
-
 import { PrimeReactProvider } from "@primereact/core";
 import Aura from "@primeuix/themes/aura";
 import "primeicons/primeicons.css";
+
+import LayoutMain from "./layouts/main/LayoutMain.jsx";
+import AccountLayout from "./layouts/accountlayout/AccountLayout.jsx";
 
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -43,17 +43,18 @@ const App = () => {
   return (
     <PrimeReactProvider {...primereact}>
       <Routes>
+        {/* Main layout */}
         <Route element={<LayoutMain />}>
           <Route path="/" element={<Homepage />} />
-          <Route path="introduce" element={<Introduce />} />
-          <Route path="products" element={<ProductList />} />
-          <Route path="products/:id" element={<ProductDetail />} />
+          <Route path="/introduce" element={<Introduce />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
-            <Route path="cart" element={<Cart />} />
+            <Route path="/cart" element={<Cart />} />
 
-            <Route path="account" element={<AccountLayout />}>
+            <Route path="/account" element={<AccountLayout />}>
               <Route index element={<Profile />} />
               <Route path="orders" element={<Order />} />
               <Route path="profile" element={<InformationPesonal />} />
@@ -61,6 +62,8 @@ const App = () => {
             </Route>
           </Route>
         </Route>
+
+        {/* Account authentication pages */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

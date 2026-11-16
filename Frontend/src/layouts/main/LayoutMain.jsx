@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import "primeicons/primeicons.css";
 import styles from "../main/LayoutMain.module.css";
-import { BreadCrumb } from "primereact/breadcrumb";
+import { Breadcrumb } from "@primereact/ui/breadcrumb";
 import { useBreadcrumb } from "../../hooks/UserContext.jsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -10,7 +10,7 @@ import {
   faInstagram,
   faYoutube,
 } from "@fortawesome/free-brands-svg-icons";
-import { Carousel } from "primereact/carousel";
+import { Carousel } from "@primereact/ui/carousel";
 import logoImg from "../../assets/logo.png";
 import brand1 from "../../assets/logobranchs/brand1.png";
 import brand2 from "../../assets/logobranchs/brand2.png";
@@ -21,39 +21,28 @@ import brand6 from "../../assets/logobranchs/brand6.png";
 import brand7 from "../../assets/logobranchs/brand7.png";
 import brand8 from "../../assets/logobranchs/brand8.png";
 import brand9 from "../../assets/logobranchs/brand9.png";
+import { Library } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCart } from "../../redux/slices/cartSlice";
+import { useAuth } from "@/hooks/useAuth";
+
 
 const LayoutMain = () => {
+  const { user } = useAuth();
   const [showMenu, setShowMenu] = useState(true);
+  const dispatch = useDispatch();
   const lastScroll = useRef(0);
   const [transparent, setTransparent] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-
+  const totalQuantity = useSelector((state) => state.cart.totalQuantity);
   const closeMenu = () => setMenuOpen(false);
-
   const location = useLocation();
   const isHomePage = location.pathname === "/";
   const { breadcrumbs = [], setBreadcrumbs } = useBreadcrumb();
 
   const isTransparentHeader = isHomePage && transparent;
   const textColor = isTransparentHeader ? "#fff" : "#000";
-
-  const items = (breadcrumbs || []).map((item) => ({
-    label: item.label,
-    template: () => (
-      <Link to={item.url || "#"} className="p-menuitem-link">
-        <span className="p-menuitem-text">{item.label}</span>
-      </Link>
-    ),
-  }));
-
-  const home = {
-    template: () => (
-      <Link to="/" className="p-menuitem-link">
-        <span className="pi pi-home"></span>
-      </Link>
-    ),
-  };
 
   const brandImages = [
     { id: 1, image: brand1 },
@@ -66,13 +55,11 @@ const LayoutMain = () => {
     { id: 6, image: brand8 },
     { id: 6, image: brand9 },
   ];
-
-  const brandResponsiveOptions = [
-    { breakpoint: "1200px", numVisible: 5, numScroll: 1 },
-    { breakpoint: "992px", numVisible: 4, numScroll: 1 },
-    { breakpoint: "768px", numVisible: 2, numScroll: 1 },
-  ];
-
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchCart());
+    }
+  }, [user, dispatch]);
   const brandTemplate = (brand) => {
     return (
       <div className="d-flex align-items-center justify-content-center px-4 py-3">
@@ -206,15 +193,20 @@ const LayoutMain = () => {
                     <i className="pi pi-user fs-5"></i>
                   </Link>
 
-                  <span
-                    className="position-relative"
-                    style={{ color: textColor }}
-                  >
-                    <i className="pi pi-shopping-cart fs-5"></i>
-                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
-                      0
+                  <Link to="/cart">
+                    <span
+                      className="relative inline-flex"
+                      style={{ color: textColor }}
+                    >
+                      <i className="pi pi-shopping-cart text-xl!"></i>
+
+                      {totalQuantity > 0 && (
+                        <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full flex items-center justify-center bg-warning text-dark text-xs font-bold">
+                          {totalQuantity > 99 ? "99+" : totalQuantity}
+                        </span>
+                      )}
                     </span>
-                  </span>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -275,7 +267,7 @@ const LayoutMain = () => {
                 <ul className="nav flex-column gap-2 fw-semibold">
                   {[
                     { to: "/gioi-thieu", label: "GIỚI THIỆU" },
-                    { to: "/san-pham", label: "SẢN PHẨM" },
+                    { to: "/products", label: "SẢN PHẨM" },
                     { to: "/tin-tuc", label: "TIN TỨC" },
                     { to: "/lien-he", label: "LIÊN HỆ" },
                   ].map((item, index, arr) => (
@@ -324,21 +316,21 @@ const LayoutMain = () => {
             >
               <span className="text-dark fw-semibold">Sản phẩm bán chạy</span>
               <Link
-                to="/san-pham"
+                to="/products"
                 onClick={() => setSearchOpen(false)}
                 className="text-decoration-underline text-primary"
               >
                 Cà phê
               </Link>
               <Link
-                to="/san-pham"
+                to="/products"
                 onClick={() => setSearchOpen(false)}
                 className="text-decoration-underline text-primary"
               >
                 Nguyên chất
               </Link>
               <Link
-                to="/san-pham"
+                to="/products"
                 onClick={() => setSearchOpen(false)}
                 className="text-decoration-underline text-primary"
               >
@@ -357,7 +349,27 @@ const LayoutMain = () => {
           style={{ margin: "10px 0" }}
         >
           <div className="container">
-            <BreadCrumb model={items} home={home} />
+            <Breadcrumb.Root>
+              <Breadcrumb.List>
+                <Breadcrumb.Item>
+                  <Link to="/" className="p-menuitem-link">
+                    <span className="pi pi-home"></span>
+                  </Link>
+                </Breadcrumb.Item>
+
+                {breadcrumbs.map((item, index) => (
+                  <React.Fragment key={`${item.url}-${index}`}>
+                    <Breadcrumb.Separator />
+
+                    <Breadcrumb.Item>
+                      <Link to={item.url || "#"} className="p-menuitem-link">
+                        <span className="p-menuitem-text">{item.label}</span>
+                      </Link>
+                    </Breadcrumb.Item>
+                  </React.Fragment>
+                ))}
+              </Breadcrumb.List>
+            </Breadcrumb.Root>
           </div>
         </div>
       )}
@@ -378,18 +390,15 @@ const LayoutMain = () => {
           style={{ backgroundColor: "#e9e3dc" }}
         >
           <div className="container">
-            <Carousel
-              value={brandImages}
-              itemTemplate={brandTemplate}
-              numVisible={5}
-              numScroll={1}
-              circular={true}
-              autoplayInterval={3000}
-              responsiveOptions={brandResponsiveOptions}
-              showIndicators={false}
-              showNavigators={false}
-              touchable={true}
-            />
+            <Carousel.Root align="start" loop slidesPerPage={5}>
+              <Carousel.Content>
+                {brandImages.map((brand, index) => (
+                  <Carousel.Item key={`${brand.id}-${index}`}>
+                    {brandTemplate(brand)}
+                  </Carousel.Item>
+                ))}
+              </Carousel.Content>
+            </Carousel.Root>
           </div>
         </div>
 
@@ -600,7 +609,7 @@ const LayoutMain = () => {
           </div>
           <div className="col p-0">
             <Link
-              to="/san-pham"
+              to="/products"
               onClick={() => setSearchOpen(false)}
               className="text-dark text-decoration-none d-flex flex-column align-items-center"
             >

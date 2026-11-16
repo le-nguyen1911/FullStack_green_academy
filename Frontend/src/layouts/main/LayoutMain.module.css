@@ -1,49 +1,67 @@
 .heroAccount {
-    height: 280px;
+  height: 280px;
 
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 
-    position: relative;
+  position: relative;
 }
 
 .heroAccount::before {
-    content: "";
-    position: absolute;
-    inset: 0;
+  content: "";
+  position: absolute;
+  inset: 0;
 }
 
 .heroAccount .container {
-    position: relative;
-    z-index: 2;
+  position: relative;
+  z-index: 2;
 }
 
 .heroTitle {
-    font-size: 60px;
-    font-weight: 500;
-    color: #1b0a02;
-    margin-bottom: 15px;
+  font-size: 60px;
+  font-weight: 500;
+  color: #1b0a02;
+  margin-bottom: 15px;
 }
 
 .header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 9999;
-    transition: transform .3s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9999;
+  transition: transform 0.3s ease;
 }
-
 
 .show {
-    transform: translateY(0);
+  transform: translateY(0);
 }
 
-
 .hide {
-    transform: translateY(-100%);
+  transform: translateY(-100%);
+}
+.brand-carousel-content {
+  width: 100%;
+}
+
+.brand-carousel-item {
+  flex: 0 0 20%;
+  min-width: 0;
+}
+
+@media (max-width: 992px) {
+  .brand-carousel-item {
+    flex-basis: 25%;
+  }
+}
+
+@media (max-width: 768px) {
+  .brand-carousel-item {
+    flex-basis: 50%;
+  }
 }

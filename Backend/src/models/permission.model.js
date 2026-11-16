@@ -33,7 +33,6 @@ const findIdsByRole = async (roleId, conn = db) => {
   return rows.map((r) => r.permission_id);
 };
 
-// Thay toàn bộ quyền của role: xóa cũ rồi chèn mới (gọi trong transaction)
 const replaceForRole = async (roleId, permissionIds, conn = db) => {
   await conn.query("DELETE FROM role_permissions WHERE role_id = ?", [roleId]);
   if (permissionIds.length) {

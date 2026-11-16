@@ -1,5 +1,4 @@
 import styles from "./introduce.module.css"
-import { Image } from "primereact/image";
 
 
 
@@ -31,7 +30,7 @@ const Introduce = () => {
                         </p>
                     </div>
                     <div className="col-8">
-                        <Image
+                        <img
                             className={styles.imgBox}
                             src="https://cafengon.monamedia.net/wp-content/uploads/2025/01/about2.png"
                             alt="Image"
@@ -59,7 +58,7 @@ const Introduce = () => {
                                 }}
                             >
                                 <div className="d-flex align-items-center m-2">
-                                    <Image
+                                    <img
                                         src="https://cafengon.monamedia.net/wp-content/uploads/2025/01/ship-about.png.webp"
                                         width={60}
                                         alt="Ship"
@@ -81,7 +80,7 @@ const Introduce = () => {
                                 }}
                             >
                                 <div className="d-flex align-items-center m-2">
-                                    <Image
+                                    <img
                                         src="https://cafengon.monamedia.net/wp-content/uploads/2023/05/icon3-product-detail.png.webp"
                                         width={60}
                                         alt="Ship"
@@ -104,7 +103,7 @@ const Introduce = () => {
                                 }}
                             >
                                 <div className="d-flex align-items-center m-2">
-                                    <Image
+                                    <img
                                         src="https://cafengon.monamedia.net/wp-content/uploads/2023/05/icon1-product-detail.png.webp"
                                         width={60}
                                         alt="Ship"
@@ -127,7 +126,7 @@ const Introduce = () => {
                                 }}
                             >
                                 <div className="d-flex align-items-center m-2">
-                                    <Image
+                                    <img
                                         src="https://cafengon.monamedia.net/wp-content/uploads/2023/05/icon2-product-detail.png.webp"
                                         width={60}
                                         alt="Ship"
@@ -223,12 +222,12 @@ const Introduce = () => {
                         </div>
                     </div>
                     <div className="col-8 ">
-                        <Image
+                        <img
                             className={styles.imgBox}
                             src="https://cafengon.monamedia.net/wp-content/uploads/2025/01/blog2.jpg"
                             alt="Image"
                             width="100%" pt={{
-                                image: {
+                                img: {
                                     style: {
                                         borderRadius: "16px",
                                     },

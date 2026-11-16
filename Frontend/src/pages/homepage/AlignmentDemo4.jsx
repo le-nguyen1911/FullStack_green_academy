@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Carousel } from "primereact/carousel";
+import { Carousel } from "@primereact/ui/carousel";
 import styles from './Homepage.module.css';
 import galaxy1 from "../../assets/Coffeeflavor/galaxy-1.png";
 import galaxy2 from "../../assets/Coffeeflavor/galaxy-2.png";
@@ -104,43 +104,56 @@ export default function AlignmentDemoStatic() {
     };
 
     return (
-        <section className="container p-0">
-            <div className="mb-5 text-center">
-                <h1>KHÁM PHÁ HƯƠNG VỊ CÀ PHÊ ĐA DẠNG</h1>
-                <h6 className="text-muted mt-2">
-                    Tìm hiểu những kiến ​​thức cơ bản về pha cà phê, bao gồm các phương pháp pha cà phê khác nhau.
-                </h6>
-            </div>
-            <div
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseLeaveOrUp}
-                onMouseLeave={handleMouseLeaveOrUp}
-                style={{ cursor: "grab", userSelect: "none" }}
-            >
-                <Carousel
-                    value={staticProducts}
-                    itemTemplate={productTemplate}
-                    numVisible={6}
-                    numScroll={1}
-                    circular={true}
-                    responsiveOptions={responsiveOptions}
-                    showIndicators={false}
-                    showNavigators={false}
-                    page={page}
-                    onPage={(e) => setPage(e.page)}
-                    touchable={true}
-                />
-            </div>
+      <section className="container p-0">
+        <div className="mb-5 text-center">
+          <h1>KHÁM PHÁ HƯƠNG VỊ CÀ PHÊ ĐA DẠNG</h1>
+          <h6 className="text-muted mt-2">
+            Tìm hiểu những kiến ​​thức cơ bản về pha cà phê, bao gồm các phương
+            pháp pha cà phê khác nhau.
+          </h6>
+        </div>
+        <div
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseLeaveOrUp}
+          onMouseLeave={handleMouseLeaveOrUp}
+          style={{ cursor: "grab", userSelect: "none" }}
+        >
+          <Carousel.Root
+            align="start"
+            loop
+            slidesPerPage={6}
+            page={page}
+            onPageChange={(e) => setPage(e.page)}
+          >
+            <Carousel.Content>
+              {staticProducts.map((product) => (
+                <Carousel.Item key={product.id}>
+                  {productTemplate(product)}
+                </Carousel.Item>
+              ))}
+            </Carousel.Content>
+          </Carousel.Root>
+        </div>
 
-            <div className="d-flex align-items-center justify-content-center gap-3 mt-4">
-                <button onClick={handlePrev} className={styles.pagiBtn} aria-label="Previous">
-                    <h1>&#8249;</h1>
-                </button>
-                <span className={styles.pagiText}>{page + 1} / {TOTAL_STEPS}</span>
-                <button onClick={handleNext} className={styles.pagiBtn} aria-label="Next">
-                    <h1>&#8250;</h1>
-                </button>
-            </div>
-        </section>
+        <div className="d-flex align-items-center justify-content-center gap-3 mt-4">
+          <button
+            onClick={handlePrev}
+            className={styles.pagiBtn}
+            aria-label="Previous"
+          >
+            <h1>&#8249;</h1>
+          </button>
+          <span className={styles.pagiText}>
+            {page + 1} / {TOTAL_STEPS}
+          </span>
+          <button
+            onClick={handleNext}
+            className={styles.pagiBtn}
+            aria-label="Next"
+          >
+            <h1>&#8250;</h1>
+          </button>
+        </div>
+      </section>
     );
 }

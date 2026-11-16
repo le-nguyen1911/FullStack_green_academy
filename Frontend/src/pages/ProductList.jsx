@@ -13,6 +13,7 @@ import { formatVND } from "../util/format";
 import { Check } from "@primeicons/react/check";
 import { ChevronDown } from "@primeicons/react/chevron-down";
 import { Select } from "@primereact/ui/select";
+import AnimatedContent from "@/util/AnimatedContent";
 const SORTS = [
   { label: "Mới nhất", value: "newest" },
   { label: "Giá thấp đến cao", value: "price_asc" },
@@ -515,7 +516,17 @@ export default function ProductList() {
               `}
             >
               {list.items.map((p) => (
-                <ProductCard key={p.id} p={p} />
+                <AnimatedContent
+                  distance={100}
+                  direction="vertical"
+                  duration={0.8}
+                  ease="power3.out"
+                  blur={0}
+                  stagger={0.08}
+                  threshold={0.1}
+                >
+                  <ProductCard key={p.id} p={p} />
+                </AnimatedContent>
               ))}
             </div>
           )}

@@ -6,7 +6,7 @@ const { PERMISSIONS, ALL_CODES, ROLES } = require("../constants/permission");
 async function sync() {
   const conn = await db.getConnection();
   try {
-    await conn.beginTransaction();   
+    await conn.beginTransaction();
     // 1. Permissions: thêm quyền mới
     const newPerms = new Set();
     for (const p of Object.values(PERMISSIONS)) {
@@ -14,14 +14,15 @@ async function sync() {
         "INSERT IGNORE INTO permissions (id, code, name, module) VALUES (?, ?, ?, ?)",
         [randomUUID(), p.code, p.name, p.module],
       );
-      if (r.affectedRows) newPerms.add(p.code);                  
-      else await conn.query(                                     
-        "UPDATE permissions SET name = ?, module = ? WHERE code = ?",
-        [p.name, p.module, p.code],
-      );
+      if (r.affectedRows) newPerms.add(p.code);
+      else
+        await conn.query(
+          "UPDATE permissions SET name = ?, module = ? WHERE code = ?",
+          [p.name, p.module, p.code],
+        );
     }
 
-    // 2. Roles: thêm role mới 
+    // 2. Roles: thêm role mới
     const newRoles = new Set();
     for (const r of ROLES) {
       const [x] = await conn.query(
@@ -35,9 +36,15 @@ async function sync() {
     for (const r of ROLES) {
       const wanted = r.permissions === "*" ? ALL_CODES : r.permissions;
       let toGrant;
-      if (r.name === "ADMIN") toGrant = ALL_CODES;                          
-      else if (newRoles.has(r.name)) toGrant = wanted;                     
-      else toGrant = wanted.filter((c) => newPerms.has(c));                 
+    if (r.name === "ADMIN") {
+      toGrant = wanted.filter(
+        (code) => code !== "role:manage" && code !== "permission:manage",
+      );
+    } else if (newRoles.has(r.name)) {
+      toGrant = wanted;
+    } else {
+      toGrant = wanted.filter((c) => newPerms.has(c));
+    }
       if (!toGrant.length) continue;
 
       await conn.query(
@@ -60,5 +67,8 @@ async function sync() {
 }
 
 sync()
-  .catch((e) => { console.error(e); process.exitCode = 1; })
-  .finally(() => db.end());   
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => db.end());

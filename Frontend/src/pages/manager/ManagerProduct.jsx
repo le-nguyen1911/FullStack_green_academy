@@ -14,6 +14,8 @@ import Notice from "@/components/manager/Notice";
 import StatusBadge from "@/components/manager/StatusBadge";
 import Pagination from "@/components/Panigation";
 import Stars from "@/components/Stars";
+import { Trash } from "@primeicons/react";
+import { Pen, PenLine } from "lucide-react";
 
 
 const LIMIT = 10;
@@ -140,7 +142,7 @@ export default function ManagerProduct() {
             placeholder="Tìm theo tên..."
             className="rounded-l border px-3 py-2 outline-none"
           />
-          <button className="rounded-r bg-stone-800 px-4 text-white">
+          <button className="rounded-r bg-amber-900 px-4 text-white">
             Tìm
           </button>
         </form>
@@ -215,7 +217,7 @@ export default function ManagerProduct() {
           />
           <button
             onClick={applyPrice}
-            className="rounded bg-stone-800 px-3 py-2 text-white"
+            className="rounded bg-amber-900 px-3 py-2 text-white"
           >
             Lọc giá
           </button>
@@ -296,7 +298,6 @@ export default function ManagerProduct() {
                     {p.total_stock}
                   </td>
                   <td className="p-3">
-                  
                     <Stars value={p.avg_rating} />{" "}
                     <span className="text-xs text-stone-500">
                       ({p.review_count})
@@ -305,19 +306,25 @@ export default function ManagerProduct() {
                   <td className="p-3">
                     <StatusBadge active={active} on="Đang bán" />
                   </td>
-                  <td className="space-x-3 whitespace-nowrap p-3 text-right">
+                  <td className="space-x-3 whitespace-nowrap p-3 text-right flex items-center">
                     <Link
                       to={`/manager/products/${p.id}`}
                       className="text-amber-900 underline"
                     >
-                      {hasPermission("product:update") ? "Sửa" : "Xem"}
+                      {hasPermission("product:update") ? (
+                        <span className="">
+                          <Pen size={14} />
+                        </span>
+                      ) : (
+                        "Xem"
+                      )}
                     </Link>
                     {active && hasPermission("product:delete") && (
                       <button
                         onClick={() => toggleStatus(p)}
-                        className="text-red-600 underline"
+                        className="text-red-600 underline  "
                       >
-                        Ẩn
+                        <Trash />
                       </button>
                     )}
                     {!active && hasPermission("product:update") && (

@@ -7,6 +7,7 @@ const { uploadImages } = require("../middleware/upload.middleware");
 const rateLimit = require("express-rate-limit");
 const dashboardController = require("../controller/dashboard.controller");
 const reviewAdmin = require("../controller/reviewAdmin.controller");
+const userController = require("../controller/user.controller");
 router.use(authenticate);
 
 const uploadLimiter = rateLimit({
@@ -72,5 +73,35 @@ router.patch(
   reviewAdmin.setStatus,
 ); 
 router.delete("/reviews/:id", authorize(P.REVIEW_MANAGE), reviewAdmin.remove); 
+// USER MANAGEMENT
+router.get(
+  "/users",
+  authorize(P.USER_READ),
+  userController.list,
+);
+
+router.get(
+  "/users/:id",
+  authorize(P.USER_READ),
+  userController.getOne,
+);
+
+router.patch(
+  "/users/:id",
+  authorize(P.USER_MANAGE),
+  userController.update,
+);
+
+router.patch(
+  "/users/:id/role",
+  authorize(P.USER_MANAGE),
+  userController.updateRole,
+);
+
+router.patch(
+  "/users/:id/status",
+  authorize(P.USER_MANAGE),
+  userController.setStatus,
+);
 router.get("/dashboard", dashboardController.getDashboard);
 module.exports = router;

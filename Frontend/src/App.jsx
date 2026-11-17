@@ -32,6 +32,8 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Dashboard from "./pages/manager/Dashboard.jsx";
 import ManagerProduct from "./pages/manager/ManagerProduct.jsx";
 import ProductForm from "./pages/manager/ProductForm.jsx";
+import ManageReviews from "./pages/manager/ManageReviews.jsx";
+import ManagerUser from "./pages/manager/ManagerUser.jsx";
 
 const primereact = {
   license: import.meta.env.VITE_PRIMEUI_LICENSE,
@@ -77,13 +79,17 @@ const App = () => {
         <Route path="/403" element={<Forbidden />} />
 
         {/* Manager routes  */}
-        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+        <Route
+          element={<ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}
+        >
           <Route path="/manager" element={<ManagerLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="roles" element={<ManagerRole />} />
             <Route path="products" element={<ManagerProduct />} />
             <Route path="products/new" element={<ProductForm />} />
             <Route path="products/:id" element={<ProductForm />} />
+            <Route path="reviews" element={<ManageReviews />} />
+            <Route path="users" element={<ManagerUser />} />
           </Route>
         </Route>
       </Routes>

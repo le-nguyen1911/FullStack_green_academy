@@ -13,9 +13,13 @@ const findByEmailWithRole = async (email) => {
 
 const findByIdWithRole = async (id) => {
   const [rows] = await db.query(
-    `SELECT u.id, u.full_name, u.email, u.phone, u.address, u.role_id, r.name AS role_name
-     FROM users u JOIN roles r ON r.id = u.role_id
-     WHERE u.id = ?`,
+    `SELECT
+      u.id, u.full_name, u.email, u.phone, u.address,
+      u.role_id, u.status, r.name AS role_name
+     FROM users u
+     JOIN roles r ON r.id = u.role_id
+     WHERE u.id = ?
+     LIMIT 1`,
     [id],
   );
   return rows[0] || null;
@@ -95,6 +99,131 @@ const updatePassword = async (id, passwordHash, conn = db) => {
     id,
   ]);
 };
+// Danh sách người dùng dành cho quản trị
+const adminList = async ({
+  q,
+  roleId,
+  status,
+  page = 1,
+  limit = 10,
+  excludeSuperAdmin = false,
+}) => {
+  const conditions = [];
+  const params = [];
+  if (excludeSuperAdmin) {
+    conditions.push("r.name <> 'SUPER_ADMIN'");
+  }
+  if (q?.trim()) {
+    conditions.push("(u.full_name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)");
+    const keyword = `%${q.trim()}%`;
+    params.push(keyword, keyword, keyword);
+  }
+
+  if (roleId) {
+    conditions.push("u.role_id = ?");
+    params.push(roleId);
+  }
+
+  if (status) {
+    conditions.push("u.status = ?");
+    params.push(status);
+  }
+
+  const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const pageNum = Math.max(parseInt(page) || 1, 1);
+  const limitNum = Math.min(Math.max(parseInt(limit) || 10, 1), 100);
+  const offset = (pageNum - 1) * limitNum;
+
+  const [[{ total }]] = await db.query(
+    `SELECT COUNT(*) AS total
+     FROM users u
+     JOIN roles r ON r.id = u.role_id
+     ${whereSql}`,
+    params,
+  );
+
+  const [items] = await db.query(
+    `SELECT
+       u.id,
+       u.full_name,
+       u.email,
+       u.phone,
+       u.address,
+       u.role_id,
+       r.name AS role_name,
+       u.status,
+       u.created_at
+     FROM users u
+     JOIN roles r ON r.id = u.role_id
+     ${whereSql}
+     ORDER BY u.created_at DESC, u.id DESC
+     LIMIT ? OFFSET ?`,
+    [...params, limitNum, offset],
+  );
+
+  return {
+    items,
+    total: Number(total),
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum),
+  };
+};
+
+// Chi tiết người dùng
+const adminFindById = async (id) => {
+  const [rows] = await db.query(
+    `SELECT
+       u.id,
+       u.full_name,
+       u.email,
+       u.phone,
+       u.address,
+       u.role_id,
+       r.name AS role_name,
+       u.status,
+       u.created_at
+     FROM users u
+     JOIN roles r ON r.id = u.role_id
+     WHERE u.id = ?`,
+    [id],
+  );
+
+  return rows[0] || null;
+};
+
+// Cập nhật trạng thái tài khoản
+const adminSetStatus = async (id, status) => {
+  const [result] = await db.query("UPDATE users SET status = ? WHERE id = ?", [
+    status,
+    id,
+  ]);
+
+  return result.affectedRows;
+};
+
+// Cập nhật vai trò người dùng
+const adminUpdateRole = async (id, roleId) => {
+  const [result] = await db.query("UPDATE users SET role_id = ? WHERE id = ?", [
+    roleId,
+    id,
+  ]);
+
+  return result.affectedRows;
+};
+
+// Cập nhật thông tin người dùng
+const adminUpdate = async (id, { full_name, phone, address }) => {
+  const [result] = await db.query(
+    `UPDATE users
+     SET full_name = ?, phone = ?, address = ?
+     WHERE id = ?`,
+    [full_name, phone || null, address || null, id],
+  );
+
+  return result.affectedRows;
+};
 module.exports = {
   findByEmailWithRole,
   findByIdWithRole,
@@ -107,4 +236,9 @@ module.exports = {
   findPasswordHash,
   updatePassword,
   updateProfile,
+  adminList,
+  adminFindById,
+  adminSetStatus,
+  adminUpdateRole,
+  adminUpdate,
 };

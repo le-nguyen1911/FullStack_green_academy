@@ -5,9 +5,15 @@ const userModel = require("../models/user.model");
 const refreshTokenModel = require("../models/refreshToken.model");
 const { clearPermissionCache } = require("../services/permission.service");
 const { P } = require("../constants/permission");
-
-const SYSTEM_ROLES = ["ADMIN", "MANAGER", "STAFF_SALE", "CUSTOMER"];
-const LOCKED_ROLES = ["ADMIN"];
+const AppError = require("../utils/AppError");
+const SYSTEM_ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "MANAGER",
+  "STAFF_SALE",
+  "CUSTOMER",
+];
+const LOCKED_ROLES = [];
 const ADMIN_ONLY_PERMS = [P.USER_MANAGE];
 const NAME_RE = /^[A-Z0-9_]{2,50}$/;
 
@@ -28,11 +34,13 @@ const validatePermissionIds = async (roleName, permissionIds, conn) => {
     throw new AppError(400, "Có permission không tồn tại");
 
   const banned = found.filter((p) => ADMIN_ONLY_PERMS.includes(p.code));
-  if (banned.length && roleName !== "ADMIN")
+
+  if (banned.length && !["ADMIN", "SUPER_ADMIN"].includes(roleName)) {
     throw new AppError(
       400,
-      `Quyền ${banned.map((b) => b.code).join(", ")} chỉ dành cho ADMIN`,
+      `Quyền ${banned.map((b) => b.code).join(", ")} chỉ dành cho ADMIN hoặc SUPER_ADMIN`,
     );
+  }
   return ids;
 };
 
@@ -116,10 +124,10 @@ exports.updateRole = async (req, res) => {
     throw new AppError(400, "Không có dữ liệu để cập nhật");
 
   clearPermissionCache();
-  res.json({ message: "Đã cập nhật role" }); 
+  res.json({ message: "Đã cập nhật role" });
 };
 
-// PUT /roles/:id/permissions   
+// PUT /roles/:id/permissions
 exports.setRolePermissions = async (req, res) => {
   const result = await withTransaction(async (conn) => {
     const role = await roleModel.findByIdForUpdate(req.params.id, conn);
@@ -141,7 +149,7 @@ exports.setRolePermissions = async (req, res) => {
     };
   });
 
-  clearPermissionCache(); 
+  clearPermissionCache();
   res.json({ message: "Đã cập nhật quyền cho role", ...result });
 };
 
@@ -161,7 +169,7 @@ exports.deleteRole = async (req, res) => {
   res.json({ message: "Đã xóa role" });
 };
 
-// PATCH /users/:id/role   
+// PATCH /users/:id/role
 exports.assignUserRole = async (req, res) => {
   const { id } = req.params;
   if (id === req.user.id)
@@ -173,10 +181,24 @@ exports.assignUserRole = async (req, res) => {
   const newRole = await roleModel.findById(req.body.roleId);
   if (!newRole) throw new AppError(404, "Role không tồn tại");
 
-  const touchesAdmin = newRole.name === "ADMIN" || target.role_name === "ADMIN";
-  if (touchesAdmin && req.user.role !== "ADMIN")
-    throw new AppError(403, "Chỉ ADMIN mới được thay đổi role ADMIN");
+  const touchesSuperAdmin =
+    newRole.name === "SUPER_ADMIN" || target.role_name === "SUPER_ADMIN";
 
+  if (touchesSuperAdmin && req.user.role !== "SUPER_ADMIN") {
+    throw new AppError(
+      403,
+      "Chỉ SUPER_ADMIN mới được thay đổi tài khoản SUPER_ADMIN",
+    );
+  }
+
+  const touchesAdmin = newRole.name === "ADMIN" || target.role_name === "ADMIN";
+
+  if (touchesAdmin && req.user.role !== "SUPER_ADMIN") {
+    throw new AppError(
+      403,
+      "Chỉ SUPER_ADMIN mới được thay đổi tài khoản ADMIN",
+    );
+  }
   if (target.role_name === "ADMIN" && newRole.name !== "ADMIN") {
     if ((await userModel.countByRoleName("ADMIN")) <= 1)
       throw new AppError(409, "Phải còn ít nhất một ADMIN");
@@ -184,7 +206,7 @@ exports.assignUserRole = async (req, res) => {
 
   await withTransaction(async (conn) => {
     await userModel.updateRole(id, newRole.id, conn);
-    await refreshTokenModel.deleteByUser(id, conn); 
+    await refreshTokenModel.deleteByUser(id, conn);
   });
   clearPermissionCache(id);
   res.json({ message: "Đã đổi role" });

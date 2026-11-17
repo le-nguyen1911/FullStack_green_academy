@@ -83,6 +83,10 @@ const login = async ({ email, password }) => {
   if (!user || !(await bcrypt.compare(password, user.password)))
     throw new AppError(401, "Email hoặc mật khẩu không đúng");
 
+  if (user.status !== "ACTIVE") {
+    throw new AppError(403, "Tài khoản đã bị khóa hoặc vô hiệu hóa");
+  }
+
   const tokens = await issueTokens(user);
   return {
     ...tokens,
@@ -99,19 +103,34 @@ const login = async ({ email, password }) => {
 };
 
 const refresh = async (refreshToken) => {
-  if (!refreshToken) throw new AppError(401, "Thiếu refresh token");
+  if (!refreshToken) {
+    throw new AppError(401, "Thiếu refresh token");
+  }
 
   let payload;
+
   try {
     payload = verifyRefreshToken(refreshToken);
   } catch {
     throw new AppError(401, "Refresh token hết hạn hoặc không hợp lệ");
   }
-  if (!(await refreshTokenModel.consume(refreshToken)))
-    throw new AppError(401, "Refresh token không hợp lệ");
 
   const user = await userModel.findByIdWithRole(payload.sub);
-  if (!user) throw new AppError(401, "User không tồn tại");
+
+  if (!user) {
+    await refreshTokenModel.deleteByToken(refreshToken);
+    throw new AppError(401, "User không tồn tại");
+  }
+
+  if (user.status !== "ACTIVE") {
+    await refreshTokenModel.deleteByUser(user.id);
+    throw new AppError(403, "Tài khoản đã bị khóa hoặc vô hiệu hóa");
+  }
+
+  if (!(await refreshTokenModel.consume(refreshToken))) {
+    throw new AppError(401, "Refresh token không hợp lệ");
+  }
+
   return issueTokens(user);
 };
 

@@ -5,6 +5,7 @@ const productController = require("../controller/product.controller");
 const upload = require("../controller/upload.controller");
 const { uploadImages } = require("../middleware/upload.middleware");
 const rateLimit = require("express-rate-limit");
+const dashboardController = require("../controller/dashboardController");
 router.use(authenticate);
 
 const uploadLimiter = rateLimit({
@@ -62,4 +63,5 @@ router.post(
   uploadImages,
   upload.images,
 );
+router.get("/dashboard", dashboardController.getDashboard);
 module.exports = router;

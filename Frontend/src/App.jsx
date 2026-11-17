@@ -29,6 +29,7 @@ import Homepage from "./pages/homepage/Homepage.jsx";
 import Introduce from "./pages/Introduce/introduce.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import Dashboard from "./pages/manager/Dashboard.jsx";
 
 const primereact = {
   license: import.meta.env.VITE_PRIMEUI_LICENSE,
@@ -73,9 +74,10 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/403" element={<Forbidden />} />
 
-        {/* Manager routes y */}
+        {/* Manager routes  */}
         <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
           <Route path="/manager" element={<ManagerLayout />}>
+            <Route index element={<Dashboard />} />
             <Route path="roles" element={<ManagerRole />} />
           </Route>
         </Route>

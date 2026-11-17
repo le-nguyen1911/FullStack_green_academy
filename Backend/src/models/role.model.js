@@ -26,12 +26,66 @@ const findByIdForUpdate = async (id, conn) => {
   return rows[0] || null;
 };
 
-const listWithCounts = async () => {
+const listWithCounts = async ({ q, page, limit } = {}) => {
+  const where = [];
+  const params = [];
+
+  if (q && String(q).trim()) {
+    where.push("(r.name LIKE ? OR r.description LIKE ?)");
+    const searchTerm = `%${String(q).trim().replace(/[\\%_]/g, "\\$&")}%`;
+    params.push(searchTerm, searchTerm);
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+  if (page !== undefined || limit !== undefined) {
+    const pageNum = Math.max(parseInt(page) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit) || 10, 1), 100);
+    const offset = (pageNum - 1) * limitNum;
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total FROM roles r ${whereSql}`,
+      params,
+    );
+
+    const [items] = await db.query(
+      `SELECT r.id, r.name, r.description,
+              (SELECT COUNT(*) FROM role_permissions rp WHERE rp.role_id = r.id) AS permission_count,
+              (SELECT COUNT(*) FROM users u WHERE u.role_id = r.id) AS user_count
+       FROM roles r ${whereSql}
+       ORDER BY r.name
+       LIMIT ? OFFSET ?`,
+      [...params, limitNum, offset],
+    );
+
+    return {
+      items,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    };
+  }
+
   const [rows] = await db.query(
     `SELECT r.id, r.name, r.description,
             (SELECT COUNT(*) FROM role_permissions rp WHERE rp.role_id = r.id) AS permission_count,
             (SELECT COUNT(*) FROM users u WHERE u.role_id = r.id) AS user_count
-     FROM roles r ORDER BY r.name`,
+     FROM roles r ${whereSql}
+     ORDER BY r.name`,
+    params,
+  );
+  return rows;
+};
+
+const findPermissionsByRole = async (roleId, conn = db) => {
+  const [rows] = await conn.query(
+    `SELECT p.id, p.code, p.name, p.module
+     FROM role_permissions rp
+     JOIN permissions p ON p.id = rp.permission_id
+     WHERE rp.role_id = ?
+     ORDER BY p.module, p.code`,
+    [roleId],
   );
   return rows;
 };
@@ -72,6 +126,7 @@ module.exports = {
   findById,
   findByIdForUpdate,
   listWithCounts,
+  findPermissionsByRole,
   create,
   update,
   remove,

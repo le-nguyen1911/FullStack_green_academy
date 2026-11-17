@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Stepper } from "@primereact/ui/stepper";
 import { Button } from "@primereact/ui/button";
+import { Dialog } from "@primereact/ui/dialog";
 import "./style/OrderStyle.css";
 import { useAuth } from "@/hooks/useAuth";
 const Order = () => {

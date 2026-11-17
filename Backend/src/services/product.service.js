@@ -93,6 +93,25 @@ const assertProductFields = (b) => {
   if (b.images !== undefined) assertImages(b.images);
 };
 
+const assertCatalogActive = async ({ category_id, brand_id } = {}) => {
+  if (category_id) {
+    const [rows] = await db.query(
+      "SELECT 1 FROM categories WHERE id = ? AND status = TRUE",
+      [category_id],
+    );
+    if (!rows.length)
+      throw new AppError(400, "Danh mục không tồn tại hoặc đã bị ẩn");
+  }
+  if (brand_id) {
+    const [rows] = await db.query(
+      "SELECT 1 FROM brands WHERE id = ? AND status = TRUE",
+      [brand_id],
+    );
+    if (!rows.length)
+      throw new AppError(400, "Thương hiệu không tồn tại hoặc đã bị ẩn");
+  }
+};
+
 const cleanVariant = (v) => ({
   ...v,
   variant_name: v.variant_name.trim(),

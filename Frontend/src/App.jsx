@@ -7,8 +7,11 @@ import "primeicons/primeicons.css";
 
 import LayoutMain from "./layouts/main/LayoutMain.jsx";
 import AccountLayout from "./layouts/accountlayout/AccountLayout.jsx";
+import ManagerLayout from "./layouts/manager/ManagerLayout.jsx";
 
 import Login from "./pages/Login.jsx";
+import Forbidden from "./pages/Forbidden.jsx";
+import ManagerRole from "./pages/manager/ManagerRole.jsx";
 import Register from "./pages/Register.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
@@ -50,7 +53,7 @@ const App = () => {
           <Route path="/products" element={<ProductList />} />
           <Route path="/products/:id" element={<ProductDetail />} />
 
-          {/* Protected routes */}
+          {/* Protected  */}
           <Route element={<ProtectedRoute />}>
             <Route path="/cart" element={<Cart />} />
 
@@ -63,11 +66,19 @@ const App = () => {
           </Route>
         </Route>
 
-        {/* Account authentication pages */}
+        {/* Account*/}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/403" element={<Forbidden />} />
+
+        {/* Manager routes y */}
+        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+          <Route path="/manager" element={<ManagerLayout />}>
+            <Route path="roles" element={<ManagerRole />} />
+          </Route>
+        </Route>
       </Routes>
     </PrimeReactProvider>
   );

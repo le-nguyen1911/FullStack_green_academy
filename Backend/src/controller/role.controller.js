@@ -37,8 +37,17 @@ const validatePermissionIds = async (roleName, permissionIds, conn) => {
 };
 
 exports.listRoles = async (req, res) => {
-  const rows = await roleModel.listWithCounts();
-  res.json(rows.map((r) => ({ ...r, ...flags(r.name) })));
+  const { q, page, limit } = req.query;
+  const result = await roleModel.listWithCounts({ q, page, limit });
+
+  if (result && Array.isArray(result.items)) {
+    return res.json({
+      ...result,
+      items: result.items.map((r) => ({ ...r, ...flags(r.name) })),
+    });
+  }
+
+  return res.json((result || []).map((r) => ({ ...r, ...flags(r.name) })));
 };
 
 // GET /permissions: gom theo module để frontend vẽ checkbox
@@ -55,12 +64,13 @@ exports.listPermissions = async (req, res) => {
   );
 };
 
-// GET /roles/:id: chi tiết role kèm id quyền đang có (để tick sẵn)
+// GET /roles/:id: chi tiết role kèm id quyền và danh sách quyền chi tiết
 exports.getRole = async (req, res) => {
   const role = await roleModel.findById(req.params.id);
   if (!role) throw new AppError(404, "Không tìm thấy role");
   const permissionIds = await permissionModel.findIdsByRole(role.id);
-  res.json({ ...role, ...flags(role.name), permissionIds });
+  const permissions = await roleModel.findPermissionsByRole(role.id);
+  res.json({ ...role, ...flags(role.name), permissionIds, permissions });
 };
 
 // POST /roles   body: { name, description, permissionIds }
@@ -91,13 +101,21 @@ exports.updateRole = async (req, res) => {
     if (SYSTEM_ROLES.includes(role.name))
       throw new AppError(403, "Không được đổi tên role hệ thống");
     const name = normalizeName(req.body.name);
-    if (!NAME_RE.test(name)) throw new AppError(400, "Tên role không hợp lệ");
+    if (!name || !NAME_RE.test(name))
+      throw new AppError(400, "Tên role không hợp lệ");
+
+    const existing = await roleModel.findByName(name);
+    if (existing && existing.id !== role.id) {
+      throw new AppError(409, "Tên role đã tồn tại");
+    }
     data.name = name;
   }
 
   const affected = await roleModel.update(role.id, data);
   if (affected === null)
     throw new AppError(400, "Không có dữ liệu để cập nhật");
+
+  clearPermissionCache();
   res.json({ message: "Đã cập nhật role" }); 
 };
 

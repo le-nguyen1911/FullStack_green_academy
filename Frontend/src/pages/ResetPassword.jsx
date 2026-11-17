@@ -108,7 +108,7 @@ const ResetPassword = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           <div className="flex flex-col gap-2">
             <label htmlFor="newPassword" className="font-medium text-white">
               Mật khẩu mới
@@ -189,7 +189,7 @@ const ResetPassword = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-[#6f4e37] p-3 font-semibold text-white transition-all duration-300 hover:bg-[#563b29] disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-xl bg-[#6f4e37] p-3 font-semibold text-white transition-all duration-300 hover:bg-[#563b29] hover:border hover:border-white! disabled:cursor-not-allowed disabled:opacity-50 mt-3"
           >
             {loading ? "Đang cập nhật..." : "Đặt lại mật khẩu"}
           </button>

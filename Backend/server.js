@@ -45,14 +45,7 @@ app.use((req, res) => {
   });
 });
 
-app.use((err, req, res, next) => {
-  console.error(err);
-
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.status ? err.message : "Internal Server Error",
-  });
-});
+app.use(require("./src/middleware/errorHandler"));
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

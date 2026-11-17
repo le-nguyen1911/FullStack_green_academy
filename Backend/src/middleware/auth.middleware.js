@@ -22,6 +22,15 @@ exports.authenticate = (req, res, next) => {
   }
 };
 
+exports.requireRole = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Không đủ quyền truy cập" });
+    }
+    next();
+  };
+};
+
 exports.authorize = (...codes) => {
   for (const c of codes) {
     if (!ALL_CODES.includes(c))

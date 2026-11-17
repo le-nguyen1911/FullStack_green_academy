@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { randomUUID } = require("crypto");
 const db = require("../config/database");
-const { PERMISSIONS, ALL_CODES, ROLES } = require("../constants/permissions");
+const { PERMISSIONS, ALL_CODES, ROLES } = require("../constants/permission");
 
 async function sync() {
   const conn = await db.getConnection();

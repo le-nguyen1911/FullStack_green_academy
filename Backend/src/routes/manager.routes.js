@@ -5,7 +5,8 @@ const productController = require("../controller/product.controller");
 const upload = require("../controller/upload.controller");
 const { uploadImages } = require("../middleware/upload.middleware");
 const rateLimit = require("express-rate-limit");
-const dashboardController = require("../controller/dashboardController");
+const dashboardController = require("../controller/dashboard.controller");
+const reviewAdmin = require("../controller/reviewAdmin.controller");
 router.use(authenticate);
 
 const uploadLimiter = rateLimit({
@@ -63,5 +64,13 @@ router.post(
   uploadImages,
   upload.images,
 );
+router.get("/reviews", authorize(P.REVIEW_MANAGE), reviewAdmin.list); 
+router.get("/reviews/:id", authorize(P.REVIEW_MANAGE), reviewAdmin.getOne);
+router.patch(
+  "/reviews/:id/status",
+  authorize(P.REVIEW_MANAGE),
+  reviewAdmin.setStatus,
+); 
+router.delete("/reviews/:id", authorize(P.REVIEW_MANAGE), reviewAdmin.remove); 
 router.get("/dashboard", dashboardController.getDashboard);
 module.exports = router;

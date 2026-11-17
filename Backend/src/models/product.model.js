@@ -96,23 +96,34 @@ const list = async ({
     params,
   );
 
-  const [items] = await db.query(
-    `SELECT p.id, p.name, p.image_url, p.status, p.created_at,
-            p.category_id, c.name AS category_name,
-            p.brand_id, b.name AS brand_name,
-            MIN(v.price) AS min_price,
-            MAX(v.price) AS max_price,
-            COALESCE(SUM(v.quantity), 0) AS total_stock
-     FROM products p
-     JOIN categories c ON c.id = p.category_id
-     JOIN brands b ON b.id = p.brand_id
-     LEFT JOIN product_variants v ON v.product_id = p.id AND v.status = TRUE
-     ${whereSql}
-     GROUP BY p.id, c.name, b.name
-     ORDER BY ${SORTS[sort] || SORTS.newest}
-     LIMIT ? OFFSET ?`,
-    [...params, limit, offset],
-  );
+const [items] = await db.query(
+  `SELECT p.id, p.name, p.image_url, p.status, p.created_at,
+          p.category_id, c.name AS category_name,
+          p.brand_id, b.name AS brand_name,
+          MIN(v.price) AS min_price,
+          MAX(v.price) AS max_price,
+          COALESCE(SUM(v.quantity), 0) AS total_stock,
+
+          (SELECT ROUND(AVG(r.rating), 1)
+           FROM reviews r
+           WHERE r.product_id = p.id
+          ) AS avg_rating,
+
+          (SELECT COUNT(*)
+           FROM reviews r
+           WHERE r.product_id = p.id
+          ) AS review_count
+
+   FROM products p
+   JOIN categories c ON c.id = p.category_id
+   JOIN brands b ON b.id = p.brand_id
+   LEFT JOIN product_variants v ON v.product_id = p.id AND v.status = TRUE
+   ${whereSql}
+   GROUP BY p.id, c.name, b.name
+   ORDER BY ${SORTS[sort] || SORTS.newest}
+   LIMIT ? OFFSET ?`,
+  [...params, limit, offset],
+);
   return { items, total };
 };
 

@@ -30,6 +30,8 @@ import Introduce from "./pages/Introduce/introduce.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Dashboard from "./pages/manager/Dashboard.jsx";
+import ManagerProduct from "./pages/manager/ManagerProduct.jsx";
+import ProductForm from "./pages/manager/ProductForm.jsx";
 
 const primereact = {
   license: import.meta.env.VITE_PRIMEUI_LICENSE,
@@ -79,6 +81,9 @@ const App = () => {
           <Route path="/manager" element={<ManagerLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="roles" element={<ManagerRole />} />
+            <Route path="products" element={<ManagerProduct />} />
+            <Route path="products/new" element={<ProductForm />} />
+            <Route path="products/:id" element={<ProductForm />} />
           </Route>
         </Route>
       </Routes>

@@ -12,22 +12,33 @@ const run =
   };
 
 export const fetchManagerProducts = createAsyncThunk(
-  "manager/fetchList",
+  "managerProducts/fetchList",
   run(async (params) => (await api.get("/manager/products", { params })).data),
 );
 
 export const fetchManagerProduct = createAsyncThunk(
-  "manager/fetchOne",
+  "managerProducts/fetchOne",
   run(async (id) => (await api.get(`/manager/products/${id}`)).data),
 );
 
+export const fetchOptions = createAsyncThunk(
+  "managerProducts/fetchOptions",
+  run(async () => {
+    const [c, b] = await Promise.all([
+      api.get("/categories"),
+      api.get("/brands"),
+    ]);
+    return { categories: c.data, brands: b.data };
+  }),
+);
+
 export const createProduct = createAsyncThunk(
-  "manager/create",
-  run(async (body) => (await api.post("/manager/products", body)).data), // { id }
+  "managerProducts/create",
+  run(async (body) => (await api.post("/manager/products", body)).data),
 );
 
 export const updateProduct = createAsyncThunk(
-  "manager/update",
+  "managerProducts/update",
   run(async ({ id, body }) => {
     await api.patch(`/manager/products/${id}`, body);
     return id;
@@ -35,7 +46,7 @@ export const updateProduct = createAsyncThunk(
 );
 
 export const setProductStatus = createAsyncThunk(
-  "manager/setStatus",
+  "managerProducts/setStatus",
   run(async ({ id, status }) => {
     if (status) await api.patch(`/manager/products/${id}`, { status: true });
     else await api.delete(`/manager/products/${id}`);
@@ -44,7 +55,7 @@ export const setProductStatus = createAsyncThunk(
 );
 
 export const addVariant = createAsyncThunk(
-  "manager/addVariant",
+  "managerProducts/addVariant",
   run(
     async ({ productId, body }) =>
       (await api.post(`/manager/products/${productId}/variants`, body)).data,
@@ -52,7 +63,7 @@ export const addVariant = createAsyncThunk(
 );
 
 export const updateVariant = createAsyncThunk(
-  "manager/updateVariant",
+  "managerProducts/updateVariant",
   run(async ({ variantId, body }) => {
     await api.patch(`/manager/variants/${variantId}`, body);
     return variantId;
@@ -60,7 +71,7 @@ export const updateVariant = createAsyncThunk(
 );
 
 export const setVariantStatus = createAsyncThunk(
-  "manager/setVariantStatus",
+  "managerProducts/setVariantStatus",
   run(async ({ variantId, status }) => {
     if (status)
       await api.patch(`/manager/variants/${variantId}`, { status: true });
@@ -70,14 +81,16 @@ export const setVariantStatus = createAsyncThunk(
 );
 
 export const adjustStock = createAsyncThunk(
-  "manager/adjustStock",
+  "managerProducts/adjustStock",
   run(
     async ({ variantId, delta }) =>
       (await api.patch(`/manager/variants/${variantId}/stock`, { delta })).data,
-  ), // { variantId, delta, quantity }
+  ),
 );
 
-const managerProductSlice = createSlice({
+const emptyDetail = { data: null, status: "idle", error: "" };
+
+const slice = createSlice({
   name: "managerProducts",
   initialState: {
     list: {
@@ -90,11 +103,12 @@ const managerProductSlice = createSlice({
       error: "",
       requestId: null,
     },
-    detail: { data: null, status: "idle", error: "" },
+    detail: { ...emptyDetail },
+    options: { categories: [], brands: [] },
   },
   reducers: {
     clearManagerDetail(state) {
-      state.detail = { data: null, status: "idle", error: "" };
+      state.detail = { ...emptyDetail };
     },
   },
   extraReducers: (b) => {
@@ -121,6 +135,7 @@ const managerProductSlice = createSlice({
         s.list.error = a.payload || a.error.message;
       })
 
+      // Tải lại CÙNG sản phẩm thì giữ dữ liệu cũ (form không chớp), sản phẩm khác thì xóa
       .addCase(fetchManagerProduct.pending, (s, a) => {
         if (s.detail.data?.id !== a.meta.arg) s.detail.data = null;
         s.detail.status = "loading";
@@ -133,9 +148,13 @@ const managerProductSlice = createSlice({
       .addCase(fetchManagerProduct.rejected, (s, a) => {
         s.detail.status = "failed";
         s.detail.error = a.payload || a.error.message;
+      })
+
+      .addCase(fetchOptions.fulfilled, (s, a) => {
+        s.options = a.payload;
       });
   },
 });
 
-export const { clearManagerDetail } = managerProductSlice.actions;
-export default managerProductSlice.reducer;
+export const { clearManagerDetail } = slice.actions;
+export default slice.reducer;

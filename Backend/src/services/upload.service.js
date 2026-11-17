@@ -13,8 +13,8 @@ const uploadBuffer = (buffer, folder) =>
       {
         folder,
         resource_type: "image",
-        allowed_formats: ["jpg", "jpeg", "png", "webp"], 
-        transformation: [{ width: 1600, height: 1600, crop: "limit" }], 
+        allowed_formats: ["jpg", "jpeg", "png", "webp"],
+        transformation: [{ width: 1600, height: 1600, crop: "limit" }],
       },
       (err, result) => (err ? reject(err) : resolve(result)),
     );
@@ -38,7 +38,12 @@ const uploadImages = async (files, folderKey) => {
     await Promise.allSettled(
       ok.map((r) => cloudinary.uploader.destroy(r.public_id)),
     );
-    console.error("Cloudinary upload lỗi:", failed.reason?.message);
+    console.error("Cloudinary upload lỗi:", {
+      message: failed.reason?.message,
+      http_code: failed.reason?.http_code,
+      name: failed.reason?.name,
+    });
+
     throw failed.reason?.http_code === 400
       ? new AppError(400, "Tệp không phải ảnh hợp lệ")
       : new AppError(502, "Không tải được ảnh lên, vui lòng thử lại");
@@ -53,7 +58,7 @@ const uploadImages = async (files, folderKey) => {
 };
 
 const publicIdOf = (url) => {
-  if (!url || !url.includes("res.cloudinary.com")) return null; 
+  if (!url || !url.includes("res.cloudinary.com")) return null;
   const m = /\/image\/upload\/(?:v\d+\/)?(.+)\.[a-z0-9]+$/i.exec(url);
   return m && m[1].startsWith("coffee_shop/") ? m[1] : null;
 };
@@ -63,7 +68,7 @@ const destroyUnused = async (urls) => {
     const publicId = publicIdOf(url);
     if (!publicId) continue;
     try {
-      if (await imageModel.isUsed(url)) continue; 
+      if (await imageModel.isUsed(url)) continue;
       await cloudinary.uploader.destroy(publicId, {
         resource_type: "image",
         invalidate: true,

@@ -48,7 +48,8 @@ const NEW_DAYS = 30;
 
 const decorate = (item) => ({
   ...item,
-  avg_rating: item.avg_rating === null ? null : Number(item.avg_rating), // null = chưa có đánh giá
+  avg_rating: item.avg_rating === null ? null : Number(item.avg_rating),
+  review_count: Number(item.review_count || 0),
   is_new:
     Date.now() - new Date(item.created_at).getTime() <
     NEW_DAYS * 24 * 60 * 60 * 1000,
@@ -282,6 +283,7 @@ module.exports = {
   create,
   update,
   remove,
+  decorate,
   addVariant,
   updateVariant,
   removeVariant,

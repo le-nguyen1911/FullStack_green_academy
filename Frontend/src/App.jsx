@@ -26,6 +26,7 @@ import Homepage from "./pages/homepage/Homepage.jsx";
 import Introduce from "./pages/Introduce/introduce.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import Checkout from "./pages/Checkout.jsx";
 
 const primereact = {
   license: import.meta.env.VITE_PRIMEUI_LICENSE,
@@ -53,6 +54,7 @@ const App = () => {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
 
             <Route path="/account" element={<AccountLayout />}>
               <Route index element={<Profile />} />

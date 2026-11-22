@@ -5,6 +5,7 @@ import { Stepper } from "@primereact/ui/stepper";
 import { Dialog } from "primereact/dialog";
 import { Button } from "@primereact/ui/button";
 import "./style/OrderStyle.css";
+
 const Order = () => {
     const { user } = useUser();
     const [orders, setOrders] = useState([]);
@@ -13,7 +14,18 @@ const Order = () => {
     const [showModalCancel, setShowModalCancel] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
-    const getStatus = (status) => {
+    const normalizeStatus = (status) => {
+        const s = String(status || "").toLowerCase();
+        if (s === "pending_confirmation" || s === "pending") return "pending";
+        if (s === "confirmed") return "confirmed";
+        if (s === "shipping") return "shipping";
+        if (s === "delivered" || s === "completed") return "delivered";
+        if (s === "cancelled" || s === "canceled") return "cancelled";
+        return s || "pending";
+    };
+
+    const getStatus = (rawStatus) => {
+        const status = normalizeStatus(rawStatus);
         switch (status) {
             case "pending":
                 return {
@@ -52,12 +64,14 @@ const Order = () => {
 
             default:
                 return {
-                    text: status,
+                    text: rawStatus,
                     className: "border border-gray-400 bg-gray-50 text-gray-600",
                 };
         }
     };
-    const getStep = (status) => {
+
+    const getStep = (rawStatus) => {
+        const status = normalizeStatus(rawStatus);
         switch (status) {
             case "pending":
                 return "1";
@@ -78,61 +92,95 @@ const Order = () => {
                 return "1";
         }
     };
+
+    const openOrderDetail = async (order) => {
+        setSelectedOrder(order);
+        setShowModal(true);
+        try {
+            const detailRes = await axios.get(`orders/${order.id}`);
+            const detailData = detailRes?.data?.data || detailRes?.data;
+            if (detailData && typeof detailData === "object") {
+                setSelectedOrder((prev) => ({ ...prev, ...detailData }));
+            }
+        } catch {
+        }
+    };
+
     const hanlerCancelOrder = async (id) => {
         try {
             await axios.patch(`orders/${id}`, {
                 status: "cancelled",
+                order_status: "CANCELLED",
             });
 
             setOrders((prev) =>
                 prev.map((item) =>
-                    item.id === id ? { ...item, status: "cancelled" } : item,
+                    item.id === id ? { ...item, status: "cancelled", order_status: "CANCELLED" } : item,
                 ),
             );
 
-            setSelectedOrder((prev) => ({
-                ...prev,
-                status: "cancelled",
-            }));
+            setSelectedOrder((prev) =>
+                prev ? { ...prev, status: "cancelled", order_status: "CANCELLED" } : prev,
+            );
 
             setShowModalCancel(false);
         } catch (error) {
             console.log(error);
         }
     };
+
     const handlerReceiveOrder = async (id) => {
         try {
             await axios.patch(`orders/${id}`, {
                 status: "delivered",
+                order_status: "DELIVERED",
             });
 
             setOrders((prev) =>
                 prev.map((item) =>
-                    item.id === id ? { ...item, status: "delivered" } : item,
+                    item.id === id ? { ...item, status: "delivered", order_status: "DELIVERED" } : item,
                 ),
             );
 
-            setSelectedOrder((prev) => ({
-                ...prev,
-                status: "delivered",
-            }));
+            setSelectedOrder((prev) =>
+                prev ? { ...prev, status: "delivered", order_status: "DELIVERED" } : prev,
+            );
         } catch (error) {
             console.log(error);
         }
     };
+
     useEffect(() => {
         if (!user) return;
 
         const fetchData = async () => {
             try {
-                const [orderRes, productRes] = await Promise.all([
-                    axios.get("orders"),
-                    axios.get("products"),
-                ]);
+                let orderList = [];
+                try {
+                    const myOrdersRes = await axios.get("orders/my-orders");
+                    const payload = myOrdersRes?.data?.data ?? myOrdersRes?.data;
+                    orderList = Array.isArray(payload?.items)
+                        ? payload.items
+                        : Array.isArray(payload)
+                            ? payload
+                            : [];
+                } catch {
+                    const orderRes = await axios.get("orders");
+                    const raw = orderRes?.data?.data?.items ?? orderRes?.data?.data ?? orderRes?.data ?? [];
+                    orderList = Array.isArray(raw)
+                        ? raw.filter((o) => !o.user_id || o.user_id === user.id)
+                        : [];
+                }
 
-                setOrders(orderRes.data.filter((o) => o.user_id === user.id));
+                setOrders(orderList);
 
-                setProducts(productRes.data);
+                try {
+                    const productRes = await axios.get("products");
+                    const pData = productRes?.data?.data?.items ?? productRes?.data?.data ?? productRes?.data ?? [];
+                    setProducts(Array.isArray(pData) ? pData : []);
+                } catch {
+                    setProducts([]);
+                }
             } catch (error) {
                 console.log(error);
             }
@@ -169,16 +217,21 @@ const Order = () => {
 
                         <tbody>
                             {orders.map((order) => {
-                                const status = getStatus(order.status);
+                                const rawSt = order.status || order.order_status;
+                                const normSt = normalizeStatus(rawSt);
+                                const status = getStatus(rawSt);
+                                const totalAmt = Number(order.total_amount || 0);
 
                                 return (
                                     <tr key={order.id} className="border-b!">
                                         <td className="px-3 md:px-6 py-5 text-center font-semibold">
-                                            #{order.id}
+                                            {order.order_code || `#${order.id}`}
                                         </td>
 
                                         <td className="hidden sm:table-cell px-3 md:px-6 py-5 text-center">
-                                            {new Date(order.created_at).toLocaleDateString("vi-VN")}
+                                            {order.created_at
+                                                ? new Date(order.created_at).toLocaleDateString("vi-VN")
+                                                : ""}
                                         </td>
 
                                         <td className="px-3 md:px-6 py-5 text-center">
@@ -190,22 +243,19 @@ const Order = () => {
                                         </td>
 
                                         <td className="hidden md:table-cell px-3 md:px-6 py-5 text-center font-semibold">
-                                            {order.total_amount.toLocaleString()}đ
+                                            {totalAmt.toLocaleString()}đ
                                         </td>
 
                                         <td className="px-3 md:px-6 py-5 text-center">
                                             <div className="flex items-center justify-center gap-2">
                                                 <Button
                                                     className="bg-[#6f4e37]! text-white text-xs md:text-sm px-3 md:px-4 py-2 border-none!"
-                                                    onClick={() => {
-                                                        setSelectedOrder(order);
-                                                        setShowModal(true);
-                                                    }}
+                                                    onClick={() => openOrderDetail(order)}
                                                 >
                                                     Xem
                                                 </Button>
 
-                                                {order.status === "pending" && (
+                                                {normSt === "pending" && (
                                                     <Button
                                                         severity="danger"
                                                         className="text-xs md:text-sm px-3 md:px-4 py-2"
@@ -217,7 +267,7 @@ const Order = () => {
                                                         Hủy đơn
                                                     </Button>
                                                 )}
-                                                {order.status === "shipping" && (
+                                                {normSt === "shipping" && (
                                                     <Button
                                                         severity="success"
                                                         onClick={() => handlerReceiveOrder(order.id)}
@@ -272,7 +322,7 @@ const Order = () => {
                                 <Dialog.Popup className="relative w-225 max-w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
                                     <Dialog.Header className="flex items-center justify-between border-b px-6 py-4">
                                         <Dialog.Title className="text-xl font-bold">
-                                            Chi tiết đơn hàng #{selectedOrder?.id}
+                                            Chi tiết đơn hàng {selectedOrder?.order_code || `#${selectedOrder?.id}`}
                                         </Dialog.Title>
 
                                         <Dialog.HeaderActions>
@@ -284,7 +334,7 @@ const Order = () => {
                                         {selectedOrder && (
                                             <>
                                                 <Stepper.Root
-                                                    value={getStep(selectedOrder.status)}
+                                                    value={getStep(selectedOrder.status || selectedOrder.order_status)}
                                                     className="w-full mb-8 orderStepper"
                                                 >
                                                     <Stepper.List>
@@ -333,54 +383,59 @@ const Order = () => {
                                                         Thông tin đơn hàng
                                                     </h3>
                                                     <p>
-                                                        <b>Mã đơn:</b> #{selectedOrder.id}
+                                                        <b>Mã đơn:</b> {selectedOrder.order_code || `#${selectedOrder.id}`}
                                                     </p>
                                                     <p>
                                                         <b>Ngày đặt:</b>{" "}
-                                                        {new Date(
-                                                            selectedOrder.created_at,
-                                                        ).toLocaleDateString("vi-VN")}
+                                                        {selectedOrder.created_at
+                                                            ? new Date(selectedOrder.created_at).toLocaleDateString("vi-VN")
+                                                            : ""}
                                                     </p>
                                                     <p>
                                                         <b>Địa chỉ:</b> {selectedOrder.shipping_address}
                                                     </p>
                                                     <p>
-                                                        <b>Thanh toán:</b> {selectedOrder.payment_method}
+                                                        <b>Thanh toán:</b>{" "}
+                                                        {selectedOrder.payment_method ||
+                                                            (selectedOrder.payment_method_id ? "COD" : "")}
                                                     </p>
                                                     <p>
                                                         <b>Tổng tiền:</b>{" "}
                                                         <span className="text-red-500 font-bold">
-                                                            {selectedOrder.total_amount.toLocaleString()}đ
+                                                            {Number(selectedOrder.total_amount || 0).toLocaleString()}đ
                                                         </span>
                                                     </p>
                                                 </div>
                                                 <div className="mt-6 space-y-4">
-                                                    {selectedOrder.items.map((item) => {
+                                                    {(selectedOrder.items || []).map((item) => {
                                                         const product = products.find(
                                                             (p) => p.id === item.product_id,
                                                         );
+                                                        const unitPrice = Number(item.price ?? item.unit_price ?? 0);
 
                                                         return (
                                                             <div
-                                                                key={item.product_id}
+                                                                key={item.id || item.product_id}
                                                                 className="flex flex-col sm:flex-row gap-4 rounded-xl border p-4"
                                                             >
                                                                 <img
                                                                     src={
                                                                         product?.images?.[0] ||
+                                                                        product?.image_url ||
+                                                                        product?.image ||
                                                                         "https://placehold.co/120x120?text=No+Image"
                                                                     }
-                                                                    alt={product?.name || "Không có ảnh"}
+                                                                    alt={item.product_name || product?.name || "Không có ảnh"}
                                                                     className="h-24 w-24 rounded-lg object-cover border"
                                                                 />
 
                                                                 <div className="flex-1">
                                                                     <h4 className="font-semibold text-lg">
-                                                                        {product?.name}
+                                                                        {item.product_name || product?.name}
                                                                     </h4>
                                                                     <p>Số lượng: {item.quantity}</p>
                                                                     <p className="text-[#6f4e37] font-bold">
-                                                                        {item.price.toLocaleString()}đ
+                                                                        {unitPrice.toLocaleString()}đ
                                                                     </p>
                                                                 </div>
                                                             </div>

@@ -1,22 +1,73 @@
-const pool = require("../config/database");
-const listShipping = async () => {
-    const [rows] = await pool.execute(`SELECT id, name, base_fee, estimated_days
-FROM shipping_methods WHERE status = 'ACTIVE' ORDER BY id`);
+const getSelectedCartItems = async (db, userId, cartItemIds) => {
+    const placeholders = cartItemIds.map(() => "?").join(", ");
+    const [rows] = await db.execute(
+        `SELECT
+       ci.id,
+       ci.variant_id,
+       ci.quantity,
+       pv.price,
+       pv.quantity AS stock_quantity,
+       pv.variant_name,
+       pv.status AS variant_active,
+       p.name AS product_name,
+       p.status AS product_active
+     FROM carts c
+     JOIN cart_items ci ON ci.cart_id = c.id
+     JOIN product_variants pv ON pv.id = ci.variant_id
+     JOIN products p ON p.id = pv.product_id
+     WHERE c.user_id = ? AND ci.id IN (${placeholders})
+     FOR UPDATE`,
+        [userId, ...cartItemIds]
+    );
     return rows;
 };
-const listPayments = async () => {
-    const [rows] = await pool.execute(`SELECT code, name FROM payment_methods
-WHERE code = 'COD' AND status = 'ACTIVE'`);
-    return rows;
+
+const deductVariantStock = async (db, variantId, quantity) => {
+    await db.execute(
+        `UPDATE product_variants SET quantity = quantity - ? WHERE id = ?`,
+        [quantity, variantId]
+    );
 };
-const lockShipping = async (db, id) => {
-    const [rows] = await db.execute(`SELECT base_fee FROM shipping_methods
-WHERE id = ? AND status = 'ACTIVE' FOR UPDATE`, [id]);
-    return rows[0];
+
+const insertOrder = async (
+    db,
+    { id, user_id, total_amount, shipping_address, phone, status }
+) => {
+    await db.execute(
+        `INSERT INTO orders (id, user_id, total_amount, shipping_address, phone, status)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, user_id, total_amount, shipping_address, phone, status]
+    );
 };
-const lockCod = async (db) => {
-    const [rows] = await db.execute(`SELECT id FROM payment_methods
-WHERE code = 'COD' AND status = 'ACTIVE' FOR UPDATE`);
-    return rows[0];
+
+const insertOrderItem = async (
+    db,
+    { id, order_id, variant_id, product_name, price, quantity, subtotal }
+) => {
+    await db.execute(
+        `INSERT INTO order_items (id, order_id, variant_id, product_name, price, quantity, subtotal)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, order_id, variant_id, product_name, price, quantity, subtotal]
+    );
 };
-module.exports = { listShipping, listPayments, lockShipping, lockCod };
+
+const insertPayment = async (
+    db,
+    { id, order_id, payment_method, payment_status }
+) => {
+    await db.execute(
+        `INSERT INTO payments (id, order_id, payment_method, payment_status, paid_at)
+     VALUES (?, ?, ?, ?, NULL)`,
+        [id, order_id, payment_method, payment_status]
+    );
+};
+
+const deleteCartItems = async (db, userId, cartItemIds) => {
+    const placeholders = cartItemIds.map(() => "?").join(", ");
+    await db.execute(
+        `DELETE ci FROM cart_items ci
+     JOIN carts c ON c.id = ci.cart_id
+     WHERE c.user_id = ? AND ci.id IN (${placeholders})`,
+        [userId, ...cartItemIds]
+    );
+};

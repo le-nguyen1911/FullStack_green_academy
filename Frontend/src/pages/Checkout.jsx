@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useUser } from "../hooks/useAuth";
+import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
+import { useUser } from "@/hooks/UserContext";
+import {
+    fetchCart,
+    selectSelectedItems,
+    selectSelectedTotal,
+} from "../redux/slices/cartSlice";
 
 const PAYMENT_OPTIONS = [
     {
@@ -17,25 +23,74 @@ const PAYMENT_OPTIONS = [
     },
 ];
 
+const getItemImage = (item) =>
+    item?.image_url ||
+    item?.image ||
+    item?.thumbnail ||
+    item?.product_image ||
+    item?.product?.image_url ||
+    item?.product?.image ||
+    "";
+
 const Checkout = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user } = useUser();
+    const dispatch = useDispatch();
+    const { user } = useUser() || {};
 
-    const { carts = [], products = [], totalPrice = 0 } = location.state || {};
+    const cartStatus = useSelector((s) => s?.cart?.status ?? "idle");
+    const cartItems = useSelector((s) => s?.cart?.items ?? []);
+    const reduxSelectedItems = useSelector((s) =>
+        s?.cart ? selectSelectedItems(s) : [],
+    );
+    const reduxSelectedTotal = useSelector((s) =>
+        s?.cart ? selectSelectedTotal(s) : 0,
+    );
+
+    useEffect(() => {
+        if (cartStatus === "idle") {
+            dispatch(fetchCart());
+        }
+    }, [cartStatus, dispatch]);
+
+    const fallbackData = (() => {
+        if (location.state) return location.state;
+        try {
+            const saved = sessionStorage.getItem("checkout_data");
+            return saved ? JSON.parse(saved) : {};
+        } catch {
+            return {};
+        }
+    })();
+
+    const activeCartIds = new Set(cartItems.map((i) => i.id));
+    const selectedItems =
+        reduxSelectedItems.length > 0
+            ? reduxSelectedItems
+            : cartItems.length > 0
+                ? (Array.isArray(fallbackData.selectedItems)
+                    ? fallbackData.selectedItems
+                    : []
+                ).filter((item) => activeCartIds.has(item.id))
+                : [];
+
+    const totalPrice =
+        reduxSelectedItems.length > 0
+            ? reduxSelectedTotal
+            : selectedItems.reduce(
+                (sum, item) =>
+                    sum +
+                    Number(
+                        item.line_total ??
+                        Number(item.price || 0) * Number(item.quantity || 0),
+                    ),
+                0,
+            );
 
     const grandTotal = totalPrice;
 
-    const [nameParts] = useState(() => {
-        const parts = (user?.full_name || "").trim().split(/\s+/);
-        const lastName = parts.slice(0, -1).join(" ");
-        const firstName = parts.slice(-1).join(" ");
-        return { firstName: parts.length > 1 ? firstName : "", lastName };
-    });
-
     const [form, setForm] = useState({
-        firstName: nameParts.firstName,
-        lastName: nameParts.lastName,
+        fullName: user?.full_name || "",
         address: user?.address || "",
         phone: user?.phone || "",
         email: user?.email || "",
@@ -43,18 +98,31 @@ const Checkout = () => {
     });
     const [paymentMethod, setPaymentMethod] = useState("COD");
     const [errors, setErrors] = useState({});
+    const [submitError, setSubmitError] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [orderSuccess, setOrderSuccess] = useState(null);
 
-    const hasItems = carts.some((cart) => cart.items?.length > 0);
+    useEffect(() => {
+        if (!user) return;
+        setForm((prev) => ({
+            ...prev,
+            fullName: prev.fullName || user.full_name || "",
+            address: prev.address || user.address || "",
+            phone: prev.phone || user.phone || "",
+            email: prev.email || user.email || "",
+        }));
+    }, [user]);
+
+    const hasItems = selectedItems.length > 0;
 
     const handleChange = (field) => (e) => {
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
+        if (submitError) setSubmitError("");
     };
 
     const validate = () => {
         const newErrors = {};
-        if (!form.firstName.trim()) newErrors.firstName = "Vui lòng nhập tên";
-        if (!form.lastName.trim()) newErrors.lastName = "Vui lòng nhập họ";
+        if (!form.fullName.trim()) newErrors.fullName = "Vui lòng nhập họ và tên";
         if (!form.address.trim()) newErrors.address = "Vui lòng nhập địa chỉ";
         if (!form.phone.trim()) newErrors.phone = "Vui lòng nhập số điện thoại";
         if (!form.email.trim()) newErrors.email = "Vui lòng nhập địa chỉ email";
@@ -65,17 +133,19 @@ const Checkout = () => {
     };
 
     const handlePlaceOrder = async () => {
+        if (!hasItems) {
+            navigate("/cart", { replace: true });
+            return;
+        }
+        setSubmitError("");
         if (!validate()) return;
 
         setSubmitting(true);
         try {
-            const orderItems = carts.flatMap((cart) => cart.items);
-            const fullName = `${form.lastName} ${form.firstName}`.trim();
+            const fullName = form.fullName.trim();
             const addressParts = [
-                `Người nhận: ${fullName}`,
-                `SĐT: ${form.phone}`,
-                `Email: ${form.email}`,
-                `Địa chỉ: ${form.address}`,
+                `Địa chỉ: ${form.address.trim()}`,
+                `Email: ${form.email.trim()}`,
             ];
             if (form.note.trim()) {
                 addressParts.push(`Ghi chú: ${form.note.trim()}`);
@@ -84,32 +154,133 @@ const Checkout = () => {
 
             const payload = {
                 user_id: user?.id,
-                items: orderItems,
+                recipient_name: fullName,
+                recipient_phone: form.phone.trim(),
+                shipping_address: shippingAddress,
+                shipping_method_id: fallbackData.shipping_method_id ?? 1,
+                cart_item_ids: selectedItems.map((item) => item.id),
+                note: form.note.trim(),
+                items: selectedItems.map((item) => ({
+                    cart_item_id: item.id,
+                    product_id: item.product_id,
+                    variant_id: item.variant_id,
+                    product_name: item.product_name || item.name,
+                    variant_name: item.variant_name,
+                    price: Number(item.price),
+                    quantity: item.quantity,
+                    subtotal: Number(
+                        item.line_total ??
+                        Number(item.price || 0) * Number(item.quantity || 0),
+                    ),
+                })),
                 total_amount: totalPrice,
                 currency: "VND",
                 status: "pending",
                 payment_method: paymentMethod,
-                shipping_address: shippingAddress,
                 created_at: new Date().toISOString(),
                 delivered_at: null,
             };
 
-            await axios.post("orders", payload);
+            let res;
+            try {
+                res = await axios.post("orders", payload);
+            } catch (postErr) {
+                if (postErr?.response?.status === 404) {
+                    res = await axios.post("/api/orders", payload);
+                } else {
+                    throw postErr;
+                }
+            }
 
-            await Promise.all(carts.map((cart) => axios.delete(`cart/${cart.id}`)));
+            await Promise.all(
+                selectedItems.map((item) =>
+                    axios.delete(`cart/items/${item.id}`).catch(() => null),
+                ),
+            );
 
-            navigate("/account/orders");
+            try {
+                sessionStorage.removeItem("checkout_data");
+            } catch { }
+
+            if (typeof dispatch === "function") {
+                try {
+                    await dispatch(fetchCart());
+                } catch { }
+            }
+
+            const created = res?.data?.data || res?.data || {};
+            setOrderSuccess({
+                id: created?.id || created?.order_id || "",
+                orderCode: created?.order_code || "",
+                totalAmount: Number(created?.total_amount ?? totalPrice),
+                paymentMethod,
+                items: selectedItems,
+            });
         } catch (err) {
             console.error("Lỗi khi đặt hàng:", err);
+            const msg =
+                err?.response?.data?.message ||
+                err?.response?.data?.error ||
+                err?.message ||
+                "Đặt hàng thất bại, vui lòng thử lại.";
+            setSubmitError(msg);
         } finally {
             setSubmitting(false);
         }
     };
 
+    if (orderSuccess) {
+        return (
+            <div className="min-h-screen bg-gray-50 py-10 text-center">
+                <p className="text-lg font-semibold text-green-700">
+                    Đặt hàng thành công!
+                </p>
+                <p className="mt-2 text-sm text-gray-600">
+                    {orderSuccess.orderCode
+                        ? `Mã đơn hàng: ${orderSuccess.orderCode}. `
+                        : orderSuccess.id
+                            ? `Mã đơn hàng #${orderSuccess.id}. `
+                            : "Đơn hàng của bạn đã được tạo. "}
+                    Tổng thanh toán:{" "}
+                    <span className="font-semibold text-[#6f4e37]">
+                        {Number(orderSuccess.totalAmount).toLocaleString()}đ
+                    </span>
+                </p>
+                <div className="mt-4 flex items-center justify-center gap-3">
+                    <button
+                        type="button"
+                        className="rounded-lg bg-[#6f4e37] px-4 py-2 text-white hover:bg-[#5c4033]"
+                        onClick={() => navigate("/account/orders")}
+                    >
+                        Kiểm tra đơn hàng
+                    </button>
+                    <button
+                        type="button"
+                        className="rounded-lg border border-[#6f4e37] px-4 py-2 text-[#6f4e37] hover:bg-[#6f4e37]/10"
+                        onClick={() => navigate("/products")}
+                    >
+                        Tiếp tục mua sắm
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (
+        (cartStatus === "loading" || cartStatus === "idle") &&
+        selectedItems.length === 0
+    ) {
+        return (
+            <div className="min-h-screen bg-gray-50 py-10 text-center">
+                <p>Đang kiểm tra giỏ hàng...</p>
+            </div>
+        );
+    }
+
     if (!hasItems) {
         return (
             <div className="min-h-screen bg-gray-50 py-10 text-center">
-                <p>Không có dữ liệu giỏ hàng để thanh toán.</p>
+                <p>Giỏ hàng hiện không có sản phẩm nào để thanh toán.</p>
                 <button
                     className="mt-4 rounded-lg bg-[#6f4e37] px-4 py-2 text-white"
                     onClick={() => navigate("/cart")}
@@ -127,37 +298,20 @@ const Checkout = () => {
                     <div>
                         <h2 className="mb-6 text-2xl font-bold">Thông Tin Thanh Toán</h2>
 
-                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                            <div>
-                                <label className="mb-2 block font-medium">
-                                    Tên <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    value={form.firstName}
-                                    onChange={handleChange("firstName")}
-                                    className="h-12 w-full rounded-lg border px-4 outline-none focus:border-[#6f4e37]"
-                                />
-                                {errors.firstName && (
-                                    <p className="mt-1 text-sm text-red-500">
-                                        {errors.firstName}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="mb-2 block font-medium ">
-                                    Họ <span className="text-red-500">*</span>
-                                </label>
-
-                                <input
-                                    value={form.lastName}
-                                    onChange={handleChange("lastName")}
-                                    className="h-12 w-full rounded-lg border px-4 outline-none focus:border-[#6f4e37]"
-                                />
-                                {errors.lastName && (
-                                    <p className="mt-1 text-sm text-red-500">{errors.lastName}</p>
-                                )}
-                            </div>
+                        <div>
+                            <label className="mb-2 block font-medium">
+                                Họ và tên <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                value={form.fullName}
+                                onChange={handleChange("fullName")}
+                                className="h-12 w-full rounded-lg border px-4 outline-none focus:border-[#6f4e37]"
+                            />
+                            {errors.fullName && (
+                                <p className="mt-1 text-sm text-red-500">
+                                    {errors.fullName}
+                                </p>
+                            )}
                         </div>
 
                         <div className="mt-5">
@@ -234,27 +388,36 @@ const Checkout = () => {
                         </div>
 
                         <div className="mt-4 space-y-4">
-                            {carts.map((cart) =>
-                                cart.items.map((item) => {
-                                    const product = products.find(
-                                        (p) => p.id === item.product_id,
-                                    );
+                            {selectedItems.map((item) => {
+                                const lineTotal =
+                                    item.line_total ??
+                                    Number(item.price || 0) * Number(item.quantity || 0);
+                                const imgSrc = getItemImage(item);
+                                const itemTitle = `${item.product_name || item.name || "Sản phẩm"}${item.variant_name ? ` (${item.variant_name})` : ""}`;
 
-                                    return (
-                                        <div
-                                            key={`${cart.id}-${item.product_id}`}
-                                            className="flex justify-between"
-                                        >
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="flex items-center justify-between gap-4"
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            {imgSrc && (
+                                                <img
+                                                    src={imgSrc}
+                                                    alt={itemTitle}
+                                                    className="h-12 w-12 rounded-lg object-cover border shrink-0"
+                                                />
+                                            )}
                                             <span className="text-[#6f4e37]">
-                                                {product?.name || "Sản phẩm"} ×{item.quantity}
-                                            </span>
-                                            <span className="font-medium">
-                                                {(item.price * item.quantity).toLocaleString()}đ
+                                                {itemTitle} ×{item.quantity}
                                             </span>
                                         </div>
-                                    );
-                                }),
-                            )}
+                                        <span className="font-medium shrink-0">
+                                            {Number(lineTotal).toLocaleString()}đ
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         <hr className="my-4" />
@@ -314,10 +477,14 @@ const Checkout = () => {
                             của chúng tôi.
                         </p>
 
+                        {submitError && (
+                            <p className="mt-4 text-sm text-red-600">{submitError}</p>
+                        )}
+
                         <div className="mt-6 flex justify-end">
                             <button
                                 type="button"
-                                disabled={submitting}
+                                disabled={submitting || !hasItems}
                                 onClick={handlePlaceOrder}
                                 className="rounded-lg bg-[#6f4e37] px-8 py-3 font-semibold text-white underline underline-offset-4 transition hover:bg-[#5c4033] disabled:opacity-60"
                             >

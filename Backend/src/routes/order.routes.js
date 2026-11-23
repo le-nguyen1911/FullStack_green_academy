@@ -8,6 +8,6 @@ const asyncRoute = (fn) => (req, res, next) =>
 router.use(authenticate);
 router.post("/", asyncRoute(controller.create));
 router.get("/my-orders", asyncRoute(controller.mine));
-router.get("/:id", asyncRoute(controller.detail));
+router.patch("/:id", asyncRoute(controller.updateStatus));
 
 module.exports = router;

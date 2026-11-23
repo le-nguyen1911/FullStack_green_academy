@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
+import api from "../util/axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
 import { useUser } from "@/hooks/UserContext";
 import {
     fetchCart,
@@ -120,11 +120,17 @@ const Checkout = () => {
         if (submitError) setSubmitError("");
     };
 
+    // Chỉ thay riêng hàm validate và handlePlaceOrder bên trong Checkout.jsx:
     const validate = () => {
         const newErrors = {};
+        const phoneTrimmed = form.phone.trim();
         if (!form.fullName.trim()) newErrors.fullName = "Vui lòng nhập họ và tên";
         if (!form.address.trim()) newErrors.address = "Vui lòng nhập địa chỉ";
-        if (!form.phone.trim()) newErrors.phone = "Vui lòng nhập số điện thoại";
+        if (!phoneTrimmed) {
+            newErrors.phone = "Vui lòng nhập số điện thoại";
+        } else if (!/^0\d{9}$/.test(phoneTrimmed)) {
+            newErrors.phone = "Số điện thoại gồm 10 số, bắt đầu bằng 0";
+        }
         if (!form.email.trim()) newErrors.email = "Vui lòng nhập địa chỉ email";
         if (!paymentMethod)
             newErrors.paymentMethod = "Vui lòng chọn phương thức thanh toán";
@@ -140,9 +146,13 @@ const Checkout = () => {
         setSubmitError("");
         if (!validate()) return;
 
+        if (paymentMethod !== "COD") {
+            setSubmitError("Hiện tại hệ thống mới hỗ trợ thanh toán COD.");
+            return;
+        }
+
         setSubmitting(true);
         try {
-            const fullName = form.fullName.trim();
             const addressParts = [
                 `Địa chỉ: ${form.address.trim()}`,
                 `Email: ${form.email.trim()}`,
@@ -150,53 +160,18 @@ const Checkout = () => {
             if (form.note.trim()) {
                 addressParts.push(`Ghi chú: ${form.note.trim()}`);
             }
-            const shippingAddress = addressParts.join(" - ");
 
             const payload = {
-                user_id: user?.id,
-                recipient_name: fullName,
+                cart_item_ids: selectedItems.map((item) => String(item.id)),
+                recipient_name: form.fullName.trim(),
                 recipient_phone: form.phone.trim(),
-                shipping_address: shippingAddress,
+                shipping_address: addressParts.join(" - "),
                 shipping_method_id: fallbackData.shipping_method_id ?? 1,
-                cart_item_ids: selectedItems.map((item) => item.id),
-                note: form.note.trim(),
-                items: selectedItems.map((item) => ({
-                    cart_item_id: item.id,
-                    product_id: item.product_id,
-                    variant_id: item.variant_id,
-                    product_name: item.product_name || item.name,
-                    variant_name: item.variant_name,
-                    price: Number(item.price),
-                    quantity: item.quantity,
-                    subtotal: Number(
-                        item.line_total ??
-                        Number(item.price || 0) * Number(item.quantity || 0),
-                    ),
-                })),
-                total_amount: totalPrice,
-                currency: "VND",
-                status: "pending",
-                payment_method: paymentMethod,
-                created_at: new Date().toISOString(),
-                delivered_at: null,
+                payment_method: "COD",
+                note: form.note.trim() ? form.note.trim() : null,
             };
 
-            let res;
-            try {
-                res = await axios.post("orders", payload);
-            } catch (postErr) {
-                if (postErr?.response?.status === 404) {
-                    res = await axios.post("/api/orders", payload);
-                } else {
-                    throw postErr;
-                }
-            }
-
-            await Promise.all(
-                selectedItems.map((item) =>
-                    axios.delete(`cart/items/${item.id}`).catch(() => null),
-                ),
-            );
+            const res = await api.post("orders", payload);
 
             try {
                 sessionStorage.removeItem("checkout_data");
@@ -213,7 +188,7 @@ const Checkout = () => {
                 id: created?.id || created?.order_id || "",
                 orderCode: created?.order_code || "",
                 totalAmount: Number(created?.total_amount ?? totalPrice),
-                paymentMethod,
+                paymentMethod: "COD",
                 items: selectedItems,
             });
         } catch (err) {
@@ -378,7 +353,7 @@ const Checkout = () => {
                         </div>
                     </div>
 
-                    {/* Right - Đơn hàng của bạn */}
+                    {/* Đơn hàng của bạn */}
                     <div className="h-fit rounded-2xl border bg-white p-8">
                         <h2 className="mb-6 text-2xl font-bold">Đơn Hàng Của Bạn</h2>
 

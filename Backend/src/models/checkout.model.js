@@ -71,3 +71,28 @@ const deleteCartItems = async (db, userId, cartItemIds) => {
         [userId, ...cartItemIds]
     );
 };
+
+const lockShipping = async (db, shippingMethodId) => {
+    return {
+        id: shippingMethodId ?? 1,
+        base_fee: "0.00",
+    };
+};
+
+const lockCod = async (db) => {
+    return {
+        id: 1,
+        code: "COD",
+    };
+};
+
+module.exports = {
+    getSelectedCartItems,
+    deductVariantStock,
+    insertOrder,
+    insertOrderItem,
+    insertPayment,
+    deleteCartItems,
+    lockShipping,
+    lockCod,
+};

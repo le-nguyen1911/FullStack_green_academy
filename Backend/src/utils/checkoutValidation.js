@@ -6,9 +6,19 @@ const object = (body, fields, required = fields) => {
         fail(400, "Body thiếu trường hoặc có trường không được phép");
     }
 };
+
+const cartItemId = (value) => {
+    if (typeof value !== "string" || !value.trim() || value.trim().length > 100) {
+        fail(400, "cart_item_ids không hợp lệ");
+    }
+    return value.trim();
+};
+
 const idNumber = (value) => {
-    if (typeof value !== "number") fail(400, "ID trong JSON phải là number");
-    return parseId(value);
+    if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 2147483647) {
+        fail(400, "ID trong JSON phải là số nguyên dương hợp lệ");
+    }
+    return value;
 };
 const quantity = (value) => {
     if (!Number.isInteger(value) || value < 1 || value > 2147483647) {

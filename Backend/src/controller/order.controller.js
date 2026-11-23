@@ -7,10 +7,13 @@ const fail = (status, message) => {
 };
 
 const parseId = (rawId) => {
-    if (typeof rawId !== "string" || !/^[1-9]\d*$/.test(rawId)) {
-        fail(400, "ID không hợp lệ");
+    const id = String(rawId || "").trim();
+    if (!id) {
+        const err = new Error("ID không hợp lệ");
+        err.status = 400;
+        throw err;
     }
-    return Number(rawId);
+    return id;
 };
 
 const orderBody = (body = {}) => {
@@ -54,4 +57,18 @@ const detail = async (req, res) => {
     res.json({ success: true, data });
 };
 
-module.exports = { create, mine, detail };
+
+const updateStatus = async (req, res, next) => {
+    try {
+        const userId = req.user?.id || req.userId;
+        const data = await orderService.updateStatus(userId, req.params.id, req.body);
+        res.json({ success: true, data });
+    } catch (err) {
+        if (err.status === 404) {
+            return res.status(404).json({ message: err.message });
+        }
+        next(err);
+    }
+};
+
+module.exports = { create, mine, detail, updateStatus };

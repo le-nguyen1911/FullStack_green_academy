@@ -157,13 +157,23 @@ const Cart = () => {
             <span>Tổng cộng</span>
             <span className="text-red-700">{formatVND(selectedTotal)}</span>
           </div>
-          <button
-            onClick={onCheckout}
-            disabled={selectedItems.length === 0}
-            className="w-full py-2 bg-amber-900 text-white rounded hover:bg-amber-800 disabled:opacity-50"
+          <Link
+            to="/checkout"
+            onClick={(e) => {
+              if (selectedItems.length === 0) {
+                e.preventDefault();
+                return;
+              }
+              onCheckout?.(e);
+            }}
+            aria-disabled={selectedItems.length === 0}
+            className={`flex items-center justify-center w-full py-3 px-4 rounded-lg text-sm font-medium text-white no-underline transition-colors ${selectedItems.length === 0
+              ? "bg-amber-950/50 opacity-50 cursor-not-allowed pointer-events-none"
+              : "bg-[#662b00] hover:bg-amber-900 cursor-pointer"
+              }`}
           >
             Thanh toán ({selectedItems.length})
-          </button>
+          </Link>
           <Link
             to="/products"
             className="block text-center text-sm text-amber-900 underline mt-2"

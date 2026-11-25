@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 
 const refreshTokenModel = require("./src/models/refreshToken.model");
 const passwordResetModel = require("./src/models/passwordReset.model");
+const orderRoutes = require("./src/routes/order.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,7 +29,7 @@ app.use("/api/admin", require("./src/routes/admin.routes"));
 app.use("/api/manager", require("./src/routes/manager.routes"));
 app.use("/api", require("./src/routes/public.routes"));
 app.use("/api/cart", require("./src/routes/cart.routes"));
-
+app.use("/api/orders", orderRoutes);
 
 setInterval(
   () => {

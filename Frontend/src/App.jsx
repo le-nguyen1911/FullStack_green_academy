@@ -34,6 +34,7 @@ import ManagerProduct from "./pages/manager/ManagerProduct.jsx";
 import ProductForm from "./pages/manager/ProductForm.jsx";
 import ManageReviews from "./pages/manager/ManageReviews.jsx";
 import ManagerUser from "./pages/manager/ManagerUser.jsx";
+import ManagerOrders from "./pages/manager/ManagerOrders.jsx";
 
 const primereact = {
   license: import.meta.env.VITE_PRIMEUI_LICENSE,
@@ -90,6 +91,7 @@ const App = () => {
             <Route path="products/:id" element={<ProductForm />} />
             <Route path="reviews" element={<ManageReviews />} />
             <Route path="users" element={<ManagerUser />} />
+            <Route path="orders" element={<ManagerOrders />} />
           </Route>
         </Route>
       </Routes>

@@ -153,12 +153,12 @@ const setStatus = async (id, status, currentUserId, currentUserRole) => {
     throw new AppError(400, `Trạng thái phải là ${VALID_STATUSES.join(", ")}`);
   }
 
-  if (id === currentUserId && status !== "ACTIVE") {
+  /*if (id === currentUserId && status !== "ACTIVE") {
     throw new AppError(
       400,
       "Không thể tự khóa hoặc vô hiệu hóa tài khoản của chính mình",
     );
-  }
+  }*/
 
   const user = await getOne(id, currentUserRole);
 

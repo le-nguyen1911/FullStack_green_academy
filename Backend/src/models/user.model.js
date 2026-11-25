@@ -15,7 +15,7 @@ const findByIdWithRole = async (id) => {
   const [rows] = await db.query(
     `SELECT
       u.id, u.full_name, u.email, u.phone, u.address,
-      u.role_id, u.status, r.name AS role_name
+      u.role_id, r.name AS role_name
      FROM users u
      JOIN roles r ON r.id = u.role_id
      WHERE u.id = ?
@@ -31,6 +31,7 @@ const updateProfile = async (id, { full_name, phone, address }) => {
     [full_name, phone || null, address || null, id],
   );
 };
+
 const emailExists = async (email) => {
   const [rows] = await db.query("SELECT 1 FROM users WHERE email = ? LIMIT 1", [
     email,
@@ -54,6 +55,7 @@ const create = async ({
   );
   return id;
 };
+
 const updateRole = async (id, roleId, conn = db) => {
   const [r] = await conn.query("UPDATE users SET role_id = ? WHERE id = ?", [
     roleId,
@@ -99,11 +101,11 @@ const updatePassword = async (id, passwordHash, conn = db) => {
     id,
   ]);
 };
+
 // Danh sách người dùng dành cho quản trị
 const adminList = async ({
   q,
   roleId,
-  status,
   page = 1,
   limit = 10,
   excludeSuperAdmin = false,
@@ -122,11 +124,6 @@ const adminList = async ({
   if (roleId) {
     conditions.push("u.role_id = ?");
     params.push(roleId);
-  }
-
-  if (status) {
-    conditions.push("u.status = ?");
-    params.push(status);
   }
 
   const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -152,7 +149,7 @@ const adminList = async ({
        u.address,
        u.role_id,
        r.name AS role_name,
-       u.status,
+       'ACTIVE' AS status,
        u.created_at
      FROM users u
      JOIN roles r ON r.id = u.role_id
@@ -182,7 +179,7 @@ const adminFindById = async (id) => {
        u.address,
        u.role_id,
        r.name AS role_name,
-       u.status,
+       'ACTIVE' AS status,
        u.created_at
      FROM users u
      JOIN roles r ON r.id = u.role_id
@@ -193,14 +190,12 @@ const adminFindById = async (id) => {
   return rows[0] || null;
 };
 
-// Cập nhật trạng thái tài khoản
-const adminSetStatus = async (id, status) => {
-  const [result] = await db.query("UPDATE users SET status = ? WHERE id = ?", [
-    status,
+// Cập nhật trạng thái tài khoản (giữ hàm để không gãy service, trả về 1 nếu user tồn tại)
+const adminSetStatus = async (id) => {
+  const [rows] = await db.query("SELECT id FROM users WHERE id = ? LIMIT 1", [
     id,
   ]);
-
-  return result.affectedRows;
+  return rows.length;
 };
 
 // Cập nhật vai trò người dùng
@@ -224,6 +219,7 @@ const adminUpdate = async (id, { full_name, phone, address }) => {
 
   return result.affectedRows;
 };
+
 module.exports = {
   findByEmailWithRole,
   findByIdWithRole,

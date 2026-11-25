@@ -33,12 +33,12 @@ exports.authenticate = async (req, res, next) => {
       });
     }
 
-    if (user.status !== "ACTIVE") {
+     /* if (user.status !== "ACTIVE") {
       return res.status(401).json({
         message: "Tài khoản đã bị khóa hoặc vô hiệu hóa",
       });
     }
-
+*/
     req.user = {
       id: user.id,
       role: user.role_name,

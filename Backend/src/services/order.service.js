@@ -100,21 +100,21 @@ const create = (userId, body) =>
 
 const list = (userId, page, limit) => orders.list(userId, page, limit);
 
-const detail = (userId, id) =>
+const detail = (userId, id, options = {}) =>
     withTransaction(async (db) => {
-        const order = await orders.detail(db, userId, id);
+        const order = await orders.detail(db, userId, id, options);
         if (!order) fail(404, "Không tìm thấy đơn hàng của bạn");
         return order;
     });
 
-const updateStatus = async (userId, orderId, payload = {}) => {
+const updateStatus = async (userId, orderId, payload = {}, options = {}) => {
     const raw = String(payload.status || payload.order_status || "").toUpperCase();
     const allowed = ["PENDING", "CONFIRMED", "SHIPPING", "DELIVERED", "CANCELLED"];
     if (!allowed.includes(raw)) {
         throw new Error("Trạng thái đơn hàng không hợp lệ");
     }
     return withTransaction(async (db) => {
-        const ok = await orders.updateStatus(db, userId, orderId, raw);
+        const ok = await orders.updateStatus(db, userId, orderId, raw, options);
         if (!ok) {
             const err = new Error("Không tìm thấy đơn hàng");
             err.status = 404;
@@ -124,4 +124,7 @@ const updateStatus = async (userId, orderId, payload = {}) => {
     });
 };
 
-module.exports = { create, list, detail, updateStatus };
+const listAll = (page, limit, filters = {}) =>
+    orders.listAll ? orders.listAll(page, limit, filters) : orders.list(null, page, limit, filters);
+
+module.exports = { create, list, listAll, detail, updateStatus };

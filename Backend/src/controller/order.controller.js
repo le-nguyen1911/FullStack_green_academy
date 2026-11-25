@@ -1,5 +1,31 @@
 const orderService = require("../services/order.service");
 
+
+const index = async (req, res) => {
+    const pageValue = req.query.page;
+    const limitValue = req.query.limit;
+
+    const page = pageValue === undefined ? 1 : Number(pageValue);
+    const limit = limitValue === undefined ? 10 : Number(limitValue);
+
+    if (!Number.isInteger(page) || page < 1) {
+        return res.status(400).json({ success: false, message: "page không hợp lệ" });
+    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+        return res.status(400).json({ success: false, message: "limit phải từ 1 đến 50" });
+    }
+
+    if (typeof orderService.listAll !== "function") {
+        return res.status(500).json({
+            success: false,
+            message: "orderService.listAll chưa được cấu hình",
+        });
+    }
+
+    const data = await orderService.listAll(page, limit);
+    return res.json({ success: true, data });
+};
+
 const fail = (status, message) => {
     const err = new Error(message);
     err.status = status;
@@ -52,16 +78,29 @@ const mine = async (req, res) => {
     });
 };
 
-const detail = async (req, res) => {
-    const data = await orderService.detail(req.user.id, parseId(req.params.id));
-    res.json({ success: true, data });
+const isStaff = (user) => {
+    const role = String(user?.role || user?.role_name || "").toLowerCase();
+    return ["admin", "manager", "staff"].includes(role);
 };
 
+const detail = async (req, res) => {
+    const data = await orderService.detail(
+        req.user.id,
+        parseId(req.params.id),
+        { isAdminOrManager: isStaff(req.user) }
+    );
+    res.json({ success: true, data });
+};
 
 const updateStatus = async (req, res, next) => {
     try {
         const userId = req.user?.id || req.userId;
-        const data = await orderService.updateStatus(userId, req.params.id, req.body);
+        const data = await orderService.updateStatus(
+            userId,
+            req.params.id,
+            req.body,
+            { isAdminOrManager: isStaff(req.user) }
+        );
         res.json({ success: true, data });
     } catch (err) {
         if (err.status === 404) {
@@ -71,4 +110,4 @@ const updateStatus = async (req, res, next) => {
     }
 };
 
-module.exports = { create, mine, detail, updateStatus };
+module.exports = { create, mine, detail, updateStatus, index };

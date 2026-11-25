@@ -1,12 +1,162 @@
 import { useEffect, useState } from "react";
 import { useUser } from "../../hooks/UserContext";
 import api from "../../util/axios";
+import { cld } from "../../util/image";
+import { formatVND } from "../../util/format";
 import { Stepper } from "@primereact/ui/stepper";
-import { Dialog } from "@primereact/ui/dialog";
 import { Button } from "@primereact/ui/button";
 import { Dialog } from "@primereact/ui/dialog";
 import "./style/OrderStyle.css";
 
+const parseImageList = (rawImages) => {
+  if (Array.isArray(rawImages)) return rawImages;
+  if (typeof rawImages === "string") {
+    const trimmed = rawImages.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        return [];
+      }
+    }
+    return [trimmed];
+  }
+  return [];
+};
+
+const getProductImage = (item, matchedProduct) => {
+  const productImages = parseImageList(
+    matchedProduct?.images ?? matchedProduct?.product_images,
+  );
+  const firstProductImg = productImages[0];
+
+  const raw =
+    item?.image_url ||
+    item?.image ||
+    item?.thumbnail ||
+    (typeof firstProductImg === "object"
+      ? firstProductImg?.url || firstProductImg?.image_url || firstProductImg?.src
+      : firstProductImg) ||
+    matchedProduct?.image_url ||
+    matchedProduct?.image ||
+    matchedProduct?.thumbnail ||
+    "";
+
+  if (!raw || typeof raw !== "string") {
+    return "https://placehold.co/120x120?text=No+Image";
+  }
+
+  const clean = raw.trim();
+  if (!clean || clean === "[" || clean === "]") {
+    return "https://placehold.co/120x120?text=No+Image";
+  }
+  if (clean.startsWith("http://") || clean.startsWith("https://")) {
+    return clean;
+  }
+  try {
+    return cld(clean, "w_120,f_auto,q_auto") || clean;
+  } catch {
+    return clean;
+  }
+};
+
+const extractVariantsList = (source) => {
+  if (!source || typeof source !== "object") return [];
+  if (Array.isArray(source.variants)) return source.variants;
+  if (Array.isArray(source.product_variants)) return source.product_variants;
+  if (Array.isArray(source.data?.variants)) return source.data.variants;
+  if (Array.isArray(source.data?.product_variants)) {
+    return source.data.product_variants;
+  }
+  return [];
+};
+
+const getMatchedVariant = (item, product) => {
+  const variants = extractVariantsList(product);
+
+  const itemVariantId =
+    item?.variant_id ??
+    item?.product_variant_id ??
+    item?.variant?.id ??
+    null;
+
+  if (itemVariantId != null && itemVariantId !== "") {
+    const byId = variants.find((v) => String(v.id) === String(itemVariantId));
+    if (byId) return byId;
+  }
+
+  const itemVariantLabel = String(
+    item?.variant_name ||
+    item?.variant_title ||
+    item?.option_name ||
+    item?.variant?.variant_name ||
+    item?.variant?.name ||
+    "",
+  ).trim();
+
+  if (itemVariantLabel) {
+    const lowerLabel = itemVariantLabel.toLowerCase();
+    const byName = variants.find((v) => {
+      const vName = String(
+        v.variant_name || v.name || v.title || v.label || "",
+      ).toLowerCase();
+      return (
+        vName && (vName.includes(lowerLabel) || lowerLabel.includes(vName))
+      );
+    });
+    if (byName) return byName;
+  }
+
+  return null;
+};
+
+const getVariantLabel = (item, product) => {
+  const matchedVariant = getMatchedVariant(item, product);
+  return (
+    item?.variant_name ||
+    item?.variant_title ||
+    item?.option_name ||
+    item?.variant?.variant_name ||
+    item?.variant?.name ||
+    matchedVariant?.variant_name ||
+    matchedVariant?.name ||
+    matchedVariant?.title ||
+    ""
+  );
+};
+
+const getVariantWeightGram = (item, product) => {
+  const variant = getMatchedVariant(item, product);
+
+  const raw =
+    item?.weight_grams ??
+    item?.variant?.weight_grams ??
+    variant?.weight_grams ??
+    variant?.weight_gram ??
+    variant?.weight ??
+    item?.weight_gram ??
+    null;
+
+  if (raw != null && raw !== "" && !Number.isNaN(Number(raw))) {
+    const num = Number(raw);
+    return num > 0 ? `${num}g` : "—";
+  }
+
+  const text = [
+    item?.variant_name,
+    variant?.variant_name,
+    variant?.name,
+    item?.product_name,
+    product?.name,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const match = text.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gram|grams)\b/i);
+  return match ? `${match[1].replace(",", ".")}g` : "—";
+};
 
 const Order = () => {
   const userCtx = useUser();
@@ -23,6 +173,7 @@ const Order = () => {
 
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [productDetailsMap, setProductDetailsMap] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [showModalCancel, setShowModalCancel] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -98,21 +249,97 @@ const Order = () => {
 
   const getOrderDate = (order) => order?.order_date || order?.created_at || "";
 
+  const fetchProductVariantsForItems = async (items = []) => {
+    const productIds = [
+      ...new Set(
+        items
+          .map((item) => item?.product_id)
+          .filter((id) => id != null && id !== ""),
+      ),
+    ];
+
+    const missingIds = productIds.filter((id) => !productDetailsMap[String(id)]);
+    if (missingIds.length === 0) return;
+
+    const results = await Promise.all(
+      missingIds.map(async (id) => {
+        try {
+          const res = await api.get(`products/${id}`);
+          const detail =
+            res?.data?.data?.product || res?.data?.data || res?.data;
+          let variants = extractVariantsList(detail);
+
+          if (variants.length === 0) {
+            for (const vUrl of [
+              `products/${id}/variants`,
+              `product-variants?product_id=${id}`,
+            ]) {
+              try {
+                const vRes = await api.get(vUrl);
+                const vPayload = vRes?.data?.data ?? vRes?.data;
+                const vList = Array.isArray(vPayload?.items)
+                  ? vPayload.items
+                  : Array.isArray(vPayload)
+                    ? vPayload
+                    : [];
+                if (vList.length > 0) {
+                  variants = vList;
+                  break;
+                }
+              } catch { }
+            }
+          }
+
+          return [
+            String(id),
+            detail && typeof detail === "object"
+              ? { ...detail, variants }
+              : { variants },
+          ];
+        } catch {
+          return [String(id), null];
+        }
+      }),
+    );
+
+    setProductDetailsMap((prev) => {
+      const next = { ...prev };
+      for (const [id, detail] of results) {
+        if (detail && typeof detail === "object") {
+          next[id] = detail;
+        }
+      }
+      return next;
+    });
+  };
+
   const openOrderDetail = async (order) => {
     setSelectedOrder(order);
     setShowModal(true);
+
+    let currentItems = Array.isArray(order?.items) ? order.items : [];
+
     try {
       const detailRes = await api.get(`orders/${order.id}`);
       const detailData = detailRes?.data?.data || detailRes?.data;
       if (detailData && typeof detailData === "object") {
+        const apiItems =
+          detailData.items || detailData.order_items || detailData.data?.items;
+        if (Array.isArray(apiItems) && apiItems.length > 0) {
+          currentItems = apiItems;
+        }
         setSelectedOrder((prev) => ({
           ...prev,
           ...detailData,
-          items: Array.isArray(detailData.items) ? detailData.items : prev?.items || [],
+          items: currentItems,
         }));
       }
     } catch (error) {
       console.log(error);
+    }
+
+    if (currentItems.length > 0) {
+      await fetchProductVariantsForItems(currentItems);
     }
   };
 
@@ -132,7 +359,9 @@ const Order = () => {
       );
 
       setSelectedOrder((prev) =>
-        prev ? { ...prev, status: "cancelled", order_status: "CANCELLED" } : prev,
+        prev
+          ? { ...prev, status: "cancelled", order_status: "CANCELLED" }
+          : prev,
       );
 
       setShowModalCancel(false);
@@ -157,7 +386,9 @@ const Order = () => {
       );
 
       setSelectedOrder((prev) =>
-        prev ? { ...prev, status: "delivered", order_status: "DELIVERED" } : prev,
+        prev
+          ? { ...prev, status: "delivered", order_status: "DELIVERED" }
+          : prev,
       );
     } catch (error) {
       console.log(error);
@@ -179,12 +410,12 @@ const Order = () => {
                 : [];
             orderList =
               endpoint === "orders" && user?.id
-                ? list.filter((o) => !o.user_id || String(o.user_id) === String(user.id))
+                ? list.filter(
+                  (o) => !o.user_id || String(o.user_id) === String(user.id),
+                )
                 : list;
             if (orderList.length > 0 || endpoint === "orders") break;
-          } catch {
-            // thử endpoint tiếp theo
-          }
+          } catch { }
         }
         setOrders(orderList);
 
@@ -339,7 +570,8 @@ const Order = () => {
                 <Dialog.Popup className="relative w-225 max-w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
                   <Dialog.Header className="flex items-center justify-between border-b px-6 py-4">
                     <Dialog.Title className="text-xl font-bold">
-                      Chi tiết đơn hàng {selectedOrder?.order_code || `#${selectedOrder?.id}`}
+                      Chi tiết đơn hàng{" "}
+                      {selectedOrder?.order_code || `#${selectedOrder?.id}`}
                     </Dialog.Title>
 
                     <Dialog.HeaderActions>
@@ -351,7 +583,9 @@ const Order = () => {
                     {selectedOrder && (
                       <>
                         <Stepper.Root
-                          value={getStep(selectedOrder.order_status || selectedOrder.status)}
+                          value={getStep(
+                            selectedOrder.order_status || selectedOrder.status,
+                          )}
                           className="w-full mb-8 orderStepper"
                         >
                           <Stepper.List>
@@ -396,91 +630,138 @@ const Order = () => {
                           </Stepper.List>
                         </Stepper.Root>
 
-                        <div className="space-y-2">
-                          <h3 className="text-xl font-bold">
-                            Thông tin đơn hàng
-                          </h3>
-                          <p>
-                            <b>Mã đơn:</b> {selectedOrder.order_code || `#${selectedOrder.id}`}
-                          </p>
-                          {(selectedOrder.recipient_name || selectedOrder.user_name) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                          <div className="space-y-2">
+                            <h3 className="text-xl font-bold">Thông tin đơn hàng</h3>
                             <p>
-                              <b>Người nhận:</b>{" "}
-                              {selectedOrder.recipient_name || selectedOrder.user_name}
+                              <b>Mã đơn:</b>{" "}
+                              {selectedOrder.order_code || `#${selectedOrder.id}`}
                             </p>
-                          )}
-                          {(selectedOrder.phone || selectedOrder.recipient_phone) && (
+                            {(selectedOrder.shoppers ||
+                              selectedOrder.recipient_name ||
+                              selectedOrder.user_name) && (
+                                <p>
+                                  <b>Người nhận:</b>{" "}
+                                  {selectedOrder.shoppers ||
+                                    selectedOrder.recipient_name ||
+                                    selectedOrder.user_name}
+                                </p>
+                              )}
+                            {(selectedOrder.phone || selectedOrder.recipient_phone) && (
+                              <p>
+                                <b>Số điện thoại:</b>{" "}
+                                {selectedOrder.phone || selectedOrder.recipient_phone}
+                              </p>
+                            )}
                             <p>
-                              <b>Số điện thoại:</b>{" "}
-                              {selectedOrder.phone || selectedOrder.recipient_phone}
+                              <b>Ngày đặt:</b>{" "}
+                              {getOrderDate(selectedOrder)
+                                ? new Date(
+                                  getOrderDate(selectedOrder),
+                                ).toLocaleDateString("vi-VN")
+                                : ""}
                             </p>
-                          )}
-                          <p>
-                            <b>Ngày đặt:</b>{" "}
-                            {getOrderDate(selectedOrder)
-                              ? new Date(getOrderDate(selectedOrder)).toLocaleDateString("vi-VN")
-                              : ""}
-                          </p>
-                          <p>
-                            <b>Địa chỉ:</b> {selectedOrder.shipping_address}
-                          </p>
-                          <p>
-                            <b>Thanh toán:</b>{" "}
-                            {selectedOrder.payment_method ||
-                              (selectedOrder.payment_method_id ? "COD" : "COD")}{" "}
-                            {selectedOrder.payment_status ? `(${selectedOrder.payment_status})` : ""}
-                          </p>
-                          <p>
-                            <b>Tổng tiền:</b>{" "}
-                            <span className="text-red-500 font-bold">
-                              {Number(selectedOrder.total_amount || 0).toLocaleString()}đ
-                            </span>
-                          </p>
-                        </div>
+                            <p>
+                              <b>Địa chỉ:</b> {selectedOrder.shipping_address}
+                            </p>
+                            <p>
+                              <b>Email:</b> {selectedOrder.shopping_email}
+                            </p>
+                            <p>
+                              <b>Ghi Chú:</b> {selectedOrder.shopping_notes}
+                            </p>
+                            <p>
+                              <b>Thanh toán:</b>{" "}
+                              {selectedOrder.payment_method ||
+                                (selectedOrder.payment_method_id ? "COD" : "COD")}{" "}
+                              {selectedOrder.payment_status
+                                ? `(${selectedOrder.payment_status})`
+                                : ""}
+                            </p>
+                            <p>
+                              <b>Tổng tiền:</b>{" "}
+                              <span className="text-red-500 font-bold">
+                                {formatVND(selectedOrder.total_amount || 0)}
+                              </span>
+                            </p>
+                          </div>
 
-                        <div className="mt-6 space-y-4">
-                          {(selectedOrder.items || []).map((item, idx) => {
-                            const product =
-                              products.find((p) => p.id === item.product_id) ||
-                              products.find(
-                                (p) =>
-                                  item.product_name &&
-                                  p.name?.toLowerCase() === item.product_name.toLowerCase(),
-                              );
-                            const unitPrice = Number(item.unit_price ?? item.price ?? 0);
+                          <div className="space-y-3">
+                            {(selectedOrder.items || []).map((item, idx) => {
+                              const catalogMatch =
+                                products.find(
+                                  (p) =>
+                                    item.product_id != null &&
+                                    String(p.id) === String(item.product_id),
+                                ) ||
+                                products.find(
+                                  (p) =>
+                                    item.product_name &&
+                                    p.name?.toLowerCase() ===
+                                    String(item.product_name).toLowerCase(),
+                                );
+                              const detailMatch =
+                                item.product_id != null
+                                  ? productDetailsMap[String(item.product_id)]
+                                  : null;
+                              const matchedProduct = {
+                                ...catalogMatch,
+                                ...detailMatch,
+                                variants:
+                                  extractVariantsList(detailMatch).length > 0
+                                    ? extractVariantsList(detailMatch)
+                                    : extractVariantsList(catalogMatch),
+                              };
 
-                            return (
-                              <div
-                                key={item.id || item.product_id || idx}
-                                className="flex flex-col sm:flex-row gap-4 rounded-xl border p-4"
-                              >
-                                <img
-                                  src={
-                                    product?.images?.[0] ||
-                                    product?.image_url ||
-                                    product?.image ||
-                                    "https://placehold.co/120x120?text=No+Image"
-                                  }
-                                  alt={item.product_name || product?.name || "Không có ảnh"}
-                                  className="h-24 w-24 rounded-lg object-cover border"
-                                />
+                              const imgSrc = getProductImage(item, matchedProduct);
+                              const variantLabel = getVariantLabel(item, matchedProduct);
+                              const weightGram = getVariantWeightGram(item, matchedProduct);
+                              const productTitle =
+                                item.product_name || matchedProduct?.name || "Sản phẩm";
+                              const lineTotal =
+                                item.subtotal ??
+                                Number(item.unit_price ?? item.price ?? 0) *
+                                Number(item.quantity || 1);
 
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-lg">
-                                    {item.product_name || product?.name}
-                                  </h4>
-                                  <p>Số lượng: {item.quantity}</p>
-                                  <p className="text-[#6f4e37] font-bold">
-                                    {unitPrice.toLocaleString()}đ
-                                  </p>
+                              return (
+                                <div
+                                  key={item.id || item.product_id || idx}
+                                  className="flex items-center justify-between gap-3 rounded-xl border p-3 text-xs"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <img
+                                      src={imgSrc}
+                                      alt={productTitle}
+                                      className="h-16 w-16 rounded-lg object-cover border shrink-0"
+                                    />
+                                    <div className="min-w-0">
+                                      <h4 className="font-semibold text-sm truncate">
+                                        {productTitle}
+                                      </h4>
+                                      {variantLabel && (
+                                        <p className="text-[11px] text-stone-600 mt-0.5 truncate">
+                                          {variantLabel}
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-stone-700 mt-1">
+                                        Số lượng: <b>{item.quantity}</b>
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="text-right shrink-0">
+                                    <p className="text-[#6f4e37] font-bold text-xs">
+                                      {formatVND(lineTotal)}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       </>
                     )}
-                    <div className="flex justify-end gap-2 mt-3">
+                    <div className="flex justify-end gap-2 mt-4">
                       <Dialog.Close as={Button} severity="secondary">
                         Đóng
                       </Dialog.Close>

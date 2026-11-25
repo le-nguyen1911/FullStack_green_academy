@@ -31,12 +31,12 @@ const deductVariantStock = async (db, variantId, quantity) => {
 
 const insertOrder = async (
     db,
-    { id, user_id, total_amount, shipping_address, phone, status }
+    { id, user_id, shoppers, total_amount, shipping_address, shopping_email, shopping_notes, phone, status }
 ) => {
     await db.execute(
-        `INSERT INTO orders (id, user_id, total_amount, shipping_address, phone, status)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-        [id, user_id, total_amount, shipping_address, phone, status]
+        `INSERT INTO orders (id, user_id, shoppers, total_amount, shipping_address, shopping_email, shopping_notes, phone, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
+        [id, user_id, shoppers, total_amount, shipping_address, shopping_email, shopping_notes, phone, status]
     );
 };
 

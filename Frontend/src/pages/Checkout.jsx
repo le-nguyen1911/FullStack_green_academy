@@ -117,23 +117,33 @@ const Checkout = () => {
 
     const handleChange = (field) => (e) => {
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
+        if (errors[field]) {
+            setErrors((prev) => ({ ...prev, [field]: "" }));
+        }
         if (submitError) setSubmitError("");
     };
 
-    // Chỉ thay riêng hàm validate và handlePlaceOrder bên trong Checkout.jsx:
     const validate = () => {
         const newErrors = {};
         const phoneTrimmed = form.phone.trim();
+        const emailTrimmed = form.email.trim();
+
         if (!form.fullName.trim()) newErrors.fullName = "Vui lòng nhập họ và tên";
         if (!form.address.trim()) newErrors.address = "Vui lòng nhập địa chỉ";
+
         if (!phoneTrimmed) {
             newErrors.phone = "Vui lòng nhập số điện thoại";
         } else if (!/^0\d{9}$/.test(phoneTrimmed)) {
             newErrors.phone = "Số điện thoại gồm 10 số, bắt đầu bằng 0";
         }
-        if (!form.email.trim()) newErrors.email = "Vui lòng nhập địa chỉ email";
+
+        if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+            newErrors.email = "Địa chỉ email không hợp lệ";
+        }
+
         if (!paymentMethod)
             newErrors.paymentMethod = "Vui lòng chọn phương thức thanh toán";
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -153,22 +163,22 @@ const Checkout = () => {
 
         setSubmitting(true);
         try {
-            const addressParts = [
-                `Địa chỉ: ${form.address.trim()}`,
-                `Email: ${form.email.trim()}`,
-            ];
-            if (form.note.trim()) {
-                addressParts.push(`Ghi chú: ${form.note.trim()}`);
-            }
+            const fullNameTrimmed = form.fullName.trim();
+            const emailTrimmed = form.email.trim();
+            const noteTrimmed = form.note.trim();
+            const shopperName =
+                fullNameTrimmed || user?.full_name || user?.name || null;
 
             const payload = {
                 cart_item_ids: selectedItems.map((item) => String(item.id)),
-                recipient_name: form.fullName.trim(),
+                shoppers: shopperName,
+                recipient_name: fullNameTrimmed,
                 recipient_phone: form.phone.trim(),
-                shipping_address: addressParts.join(" - "),
+                shipping_address: form.address.trim(),
+                shopping_email: emailTrimmed || null,
+                shopping_notes: noteTrimmed || null,
                 shipping_method_id: fallbackData.shipping_method_id ?? 1,
                 payment_method: "COD",
-                note: form.note.trim() ? form.note.trim() : null,
             };
 
             const res = await api.post("orders", payload);
@@ -187,6 +197,7 @@ const Checkout = () => {
             setOrderSuccess({
                 id: created?.id || created?.order_id || "",
                 orderCode: created?.order_code || "",
+                shoppers: created?.shoppers || shopperName || "",
                 totalAmount: Number(created?.total_amount ?? totalPrice),
                 paymentMethod: "COD",
                 items: selectedItems,
@@ -322,7 +333,7 @@ const Checkout = () => {
 
                             <div>
                                 <label className="mb-2 block font-medium">
-                                    Địa chỉ email <span className="text-red-500">*</span>
+                                    Địa chỉ email
                                 </label>
 
                                 <input

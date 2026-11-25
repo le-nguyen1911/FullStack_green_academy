@@ -11,11 +11,12 @@ const options = async () => {
 const createOrder = async (userId, input) => {
     const {
         cart_item_ids,
-        recipient_name,
+        shoppers,
         recipient_phone,
         shipping_address,
+        shopping_email,
+        shopping_notes,
         shipping_method_id,
-        note,
     } = input;
 
     const db = await pool.getConnection();
@@ -86,20 +87,17 @@ const createOrder = async (userId, input) => {
 
         const shippingFee = Number(shipping.base_fee || 0);
         const totalAmount = itemsTotal + shippingFee;
-        const fullShippingAddress = [
-            `Người nhận: ${recipient_name}`,
-            `Địa chỉ: ${shipping_address}`,
-            note ? `Ghi chú: ${note}` : null,
-        ]
-            .filter(Boolean)
-            .join(" | ");
+        
 
         const orderId = crypto.randomUUID();
         await checkout.insertOrder(db, {
             id: orderId,
             user_id: userId,
+            shoppers: shoppers,
             total_amount: totalAmount,
-            shipping_address: fullShippingAddress,
+            shipping_address: shipping_address,
+            shopping_email: shopping_email,  
+            shopping_notes: shopping_notes,
             phone: recipient_phone,
             status: "PENDING",
         });
